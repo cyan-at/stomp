@@ -1,11 +1,13 @@
 #!/usr/bin/env python
 
 import matplotlib
-matplotlib.use('GtkAgg')
+# matplotlib.use('GtkAgg')
 import matplotlib.pyplot as plt
 import numpy
 import time
-import os
+import os, sys
+
+import argparse
 
 # ugly function required for old version of matplotlib
 def pause(plt, interval):
@@ -115,12 +117,26 @@ class Stomp2DTestPlotter:
         plt.show()
 
 if __name__=='__main__':
+    parser = argparse.ArgumentParser(
+        description='STOMP plot saved directory txt files')
+    parser.add_argument('--dir', type=str, default='', help='')
+    args = parser.parse_args()
+
+    if args.dir == "":
+        print("NO DIR SPECIFIED, bailing")
+        sys.exit(1)
+    elif not os.path.isdir(os.path.expanduser(args.dir)):
+        print("Can't find specified dir, bailing")
+        sys.exit(1)
+
     fig = plt.figure(1, figsize=(2,2), dpi=128, frameon=False)
     ax = plt.Axes(fig, [0., 0., 1., 1.])
     ax.set_axis_off()
     fig.add_axes(ax)
     plt.draw()
-    s = Stomp2DTestPlotter('.')
+
+    s = Stomp2DTestPlotter(args.dir)
+
     s.load_cost_function()
     s.plot_cost_function()
     plt.axis([0,1,0,1])
