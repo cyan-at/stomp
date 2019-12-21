@@ -226,20 +226,18 @@ bool STOMP::doNoiselessRollout(int iteration_number)
   return true;
 }
 
-bool STOMP::runSingleIteration(const int iteration_number)
-{
+bool STOMP::runSingleIteration(const int iteration_number) {
   ROS_ASSERT(initialized_);
   policy_iteration_counter_++;
 
-  if (write_to_file_)
-  {
+  if (write_to_file_) {
     // load new policy if neccessary
     STOMP_VERIFY(readPolicy(iteration_number));
   }
 
-  ROS_ASSERT(doRollouts(iteration_number));
-  ROS_ASSERT(doUpdate(iteration_number));
-  ROS_ASSERT(doNoiselessRollout(iteration_number));
+  doRollouts(iteration_number);
+  doUpdate(iteration_number);
+  doNoiselessRollout(iteration_number);
 
   if (write_to_file_)
   {

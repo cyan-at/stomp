@@ -106,31 +106,43 @@ void StompConstrained::createDiffMatrices()
   }
 }
 
-void StompConstrained::setInitialTrajectory(const Eigen::MatrixXd& initial_trajectory)
-{
+void StompConstrained::setInitialTrajectory(
+  const Eigen::MatrixXd& initial_trajectory) {
   initial_trajectory_ = initial_trajectory;
+
+  Eigen::SparseMatrix<double> initial_trajectory_sparse =
+    initial_trajectory.sparseView();
+  // 2019-12-21 jim
+  // initial_trajectory arg is a Dense matrix
+  // sparse_diff_vectors_const_, sparse_diff_matrix_const_ are SparseMatrix
+  // so the 2 are incompatible to multiply
+  // so convert arg Dense matrix to SparseMatrix first
+
   sparse_diff_vectors_const_.resize(NUM_DIFF_RULES);
 
   // update the const part of differentiation vectors
-  for (int a = 0; a < NUM_DIFF_RULES; ++a)
-  {
-    sparse_diff_vectors_const_[a] = Eigen::SparseMatrix<double>(diff_num_outputs_[a], num_joints_);
-    sparse_diff_vectors_const_[a] = sparse_diff_matrix_const_[a] * initial_trajectory_;
+  for (int a = 0; a < NUM_DIFF_RULES; ++a) {
+    sparse_diff_vectors_const_[a] = Eigen::SparseMatrix<double>(
+      diff_num_outputs_[a], num_joints_);
+    sparse_diff_vectors_const_[a] =
+      sparse_diff_matrix_const_[a] * initial_trajectory_sparse;
+    // * initial_trajectory_;
   }
 
   // set the policy mean
   policy_mean_ = Eigen::VectorXd(num_variables_);
-  for (int j=0; j<num_joints_; ++j)
-  {
+  for (int j = 0; j < num_joints_; ++j) {
     int start_index = getIndex(j, 0);
-    policy_mean_.segment(start_index, num_time_steps_) = initial_trajectory_.col(j).segment(free_vars_start_, num_time_steps_);
+    policy_mean_.segment(start_index, num_time_steps_) =
+      initial_trajectory_.col(j).segment(
+        free_vars_start_, num_time_steps_);
   }
 }
 
-void StompConstrained::createCostMatrix()
-{
+void StompConstrained::createCostMatrix() {
   // first the quadratic part
-  sparse_quad_cost_ = Eigen::SparseMatrix<double>(num_variables_, num_variables_);
+  sparse_quad_cost_ = Eigen::SparseMatrix<double>(
+    num_variables_, num_variables_);
   sparse_quad_cost_.setZero();
 
   Eigen::SparseMatrix<double> R_block(num_time_steps_, num_time_steps_);

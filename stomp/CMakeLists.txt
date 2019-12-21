@@ -1,18 +1,22 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(stomp)
+set(CMAKE_CXX_FLAGS "-std=c++11")
 
 set(CMAKE_BUILD_TYPE RelWithDebInfo)
 #set(CMAKE_BUILD_TYPE Debug)
 
 find_package(catkin REQUIRED COMPONENTS roscpp)
 find_package(OpenMP REQUIRED)
-find_package(Eigen REQUIRED)
+
+find_package(Eigen3 REQUIRED)
+# find_package(PkgConfig)
+# pkg_search_module(Eigen3 REQUIRED eigen3)
 
 catkin_package(
   INCLUDE_DIRS include
   LIBRARIES stomp
   CATKIN_DEPENDS roscpp
-  DEPENDS Eigen
+  DEPENDS Eigen3
 )
 
 
@@ -45,8 +49,8 @@ add_executable(stomp_test_distributions
 include_directories(include
   ${catkin_INCLUDE_DIRS}
   ${OpenMP_INCLUDE_DIRS}
-  ${EIGEN_INCLUDE_DIRS})
-add_definitions(${EIGEN_DEFINITIONS} ${OpenMP_CXX_FLAGS})
+  ${EIGEN3_INCLUDE_DIRS})
+add_definitions(${EIGEN3_DEFINITIONS} ${OpenMP_CXX_FLAGS})
 #add_definitions(-DEIGEN_NO_DEBUG -DNDEBUG)
 
 target_link_libraries(test_stomp2d stomp)
