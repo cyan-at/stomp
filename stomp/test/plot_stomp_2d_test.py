@@ -116,6 +116,10 @@ class Stomp2DTestPlotter:
             
         plt.show()
 
+    def key_handler_00(self, event):
+        if event.key == 'enter':
+            self.animate_trajectories(False)
+
 if __name__=='__main__':
     parser = argparse.ArgumentParser(
         description='STOMP plot saved directory txt files')
@@ -129,16 +133,27 @@ if __name__=='__main__':
         print("Can't find specified dir, bailing")
         sys.exit(1)
 
-    fig = plt.figure(1, figsize=(2,2), dpi=128, frameon=False)
+    fig = plt.figure()
     ax = plt.Axes(fig, [0., 0., 1., 1.])
     ax.set_axis_off()
     fig.add_axes(ax)
-    plt.draw()
 
     s = Stomp2DTestPlotter(args.dir)
-
     s.load_cost_function()
+
+    # shows obstacles etc.
     s.plot_cost_function()
-    plt.axis([0,1,0,1])
-    s.animate_trajectories(False)
+
+    # latch animation to enter key
+    fig.canvas.mpl_connect(
+        'key_press_event', s.key_handler_00)
+    # s.animate_trajectories(False)
     #s.animate_trajectories(True)
+
+    plt.axis([0,1,0,1])
+    plt.gca().set_aspect(
+        'equal', adjustable='box')
+    title = "STOMP 2D example 500 iters                          "
+    fig.suptitle(title, fontsize=10, color="white")
+    plt.draw()
+    plt.show()
