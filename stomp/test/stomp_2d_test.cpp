@@ -51,6 +51,7 @@ int Stomp2DTest::run() {
     num_time_steps_ + 2*TRAJECTORY_PADDING));
 
   for (int d = 0; d < num_dimensions_; ++d) {
+    // apply starting point and ending point here
     initial_trajectory[d].head(TRAJECTORY_PADDING) =
       starting_point_[d]*Eigen::VectorXd::Ones(
       TRAJECTORY_PADDING);
@@ -242,6 +243,11 @@ void Stomp2DTest::readParameters() {
     "publish_to_rviz", publish_to_rviz_));
   STOMP_VERIFY(node_handle_.getParam(
     "delay_per_iteration", delay_per_iteration_));
+
+  STOMP_VERIFY(readDoubleArray(node_handle_,
+    "starting_point", starting_point_));
+  STOMP_VERIFY(readDoubleArray(node_handle_,
+    "ending_point", ending_point_));
 }
 
 bool Stomp2DTest::execute(const std::vector<Eigen::VectorXd>& parameters,

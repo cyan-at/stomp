@@ -21,9 +21,9 @@ stomp:
   # noise adaptation mode: recommended
   use_noise_adaptation: true
   # initial noise stddev - needs to be tuned.
-  noise_stddev: [ 1.0, 1.0 ]
+  noise_stddev: [ 0.4, 1.0 ]
   # how much to decay the noise every iteration, only used if noise_adaptation is disabled
-  noise_decay: [ 1.0, 1.0 ]
+  noise_decay: [ 0.4, 1.0 ]
   # minimum value the noise can reach
   noise_min_stddev: [0.01, 0.01]
 
@@ -31,6 +31,8 @@ chomp:
   learning_rate: 10.0
   max_update: 1000.0
 
+starting_point: [0.2, 0.2]
+ending_point: [0.9, 0.1]
 
 # cost function defintion. Each element defines an elliptical obstacle.
 cost_function:

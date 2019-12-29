@@ -116,6 +116,9 @@ class Stomp2DTest: public Task,
   Eigen::MatrixXd vel_diff_matrix_;
   Eigen::MatrixXd acc_diff_matrix_;
 
+  std::vector<double> starting_point_;
+  std::vector<double> ending_point_;
+
   std::vector<Eigen::VectorXd> initial_trajectory_;
 
   void readParameters();
