@@ -41,23 +41,26 @@
 #include <rosbag/bag.h>
 #include <boost/shared_ptr.hpp>
 
+
 #include <stomp/covariant_movement_primitive.h>
 #include <stomp/task.h>
 #include <stomp/policy_improvement.h>
 
-namespace stomp
-{
+#include <vector>
 
-class STOMP
-{
-public:
+namespace stomp {
+
+class STOMP {
+ public:
     STOMP();
     virtual ~STOMP();
 
-    //bool initializeAndRunTaskByName(ros::NodeHandle& node_handle, std::string& task_name);
+    // bool initializeAndRunTaskByName(
+    //     ros::NodeHandle& node_handle, std::string& task_name);
 
     // task must already be initialized at this point.
-    bool initialize(const ros::NodeHandle& node_handle, boost::shared_ptr<Task> task);
+    bool initialize(const ros::NodeHandle& node_handle,
+        boost::shared_ptr<Task> task);
 
     bool runSingleIteration(int iteration_number);
     void clearReusedRollouts();
@@ -78,8 +81,7 @@ public:
 
     void resetAdaptiveNoise();
 
-private:
-
+ private:
     bool initialized_;
     ros::NodeHandle node_handle_;
 
@@ -105,7 +107,8 @@ private:
 
     bool last_noiseless_rollout_valid_;
 
-    std::vector<std::vector<Eigen::VectorXd> > rollouts_; /**< [num_rollouts][num_dimensions] num_parameters */
+    std::vector<std::vector<Eigen::VectorXd> > rollouts_;
+    /**< [num_rollouts][num_dimensions] num_parameters */
     std::vector<std::vector<Eigen::VectorXd> > projected_rollouts_;
     std::vector<Eigen::MatrixXd> parameter_updates_;
     std::vector<Eigen::VectorXd> parameters_;

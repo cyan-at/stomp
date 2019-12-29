@@ -33,8 +33,8 @@
 
  **********************************************************************/
 
-#ifndef STOMP_POLICYIMPROVEMENT_H_
-#define STOMP_POLICYIMPROVEMENT_H_
+#ifndef STOMP_INCLUDE_STOMP_POLICY_IMPROVEMENT_H_
+#define STOMP_INCLUDE_STOMP_POLICY_IMPROVEMENT_H_
 
 // ros includes
 #include <ros/ros.h>
@@ -44,34 +44,48 @@
 #include <stomp/covariant_movement_primitive.h>
 #include <stomp/multivariate_gaussian.h>
 
-namespace stomp
-{
+#include <vector>
 
-struct Rollout
-{
-    std::vector<Eigen::VectorXd> parameters_;                       /**< [num_dimensions] num_parameters */
-    std::vector<Eigen::VectorXd> noise_;                            /**< [num_dimensions] num_parameters */
-    std::vector<Eigen::VectorXd> noise_projected_;                  /**< [num_dimensions] num_parameters */
-    std::vector<Eigen::VectorXd> parameters_noise_;                 /**< [num_dimensions] num_parameters */
-    std::vector<Eigen::VectorXd> parameters_noise_projected_;       /**< [num_dimensions] num_parameters */
-    Eigen::VectorXd state_costs_;                                   /**< num_time_steps */
-    std::vector<Eigen::VectorXd> control_costs_;                    /**< [num_dimensions] num_time_steps */
-    std::vector<Eigen::VectorXd> total_costs_;                      /**< [num_dimensions] num_time_steps */
-    std::vector<Eigen::VectorXd> cumulative_costs_;                 /**< [num_dimensions] num_time_steps */
-    std::vector<Eigen::VectorXd> probabilities_;                    /**< [num_dimensions] num_time_steps */
+namespace stomp {
 
-    std::vector<double> full_probabilities_;    /**< [num_dimensions] probabilities of full trajectory */
-    std::vector<double> full_costs_;            /**< [num_dimensions] costs of full trajectory */
-    //std::vector<double>
+struct Rollout {
+    std::vector<Eigen::VectorXd> parameters_;
+    /**< [num_dimensions] num_parameters */
+    std::vector<Eigen::VectorXd> noise_;
+    /**< [num_dimensions] num_parameters */
+    std::vector<Eigen::VectorXd> noise_projected_;
+    /**< [num_dimensions] num_parameters */
+    std::vector<Eigen::VectorXd> parameters_noise_;
+    /**< [num_dimensions] num_parameters */
+    std::vector<Eigen::VectorXd> parameters_noise_projected_;
+    /**< [num_dimensions] num_parameters */
+    Eigen::VectorXd state_costs_;
+    /**< num_time_steps */
+    std::vector<Eigen::VectorXd> control_costs_;
+    /**< [num_dimensions] num_time_steps */
+    std::vector<Eigen::VectorXd> total_costs_;
+    /**< [num_dimensions] num_time_steps */
+    std::vector<Eigen::VectorXd> cumulative_costs_;
+    /**< [num_dimensions] num_time_steps */
+    std::vector<Eigen::VectorXd> probabilities_;
+    /**< [num_dimensions] num_time_steps */
 
-    double importance_weight_;                                      /**< importance sampling weight */
-    double log_likelihood_;                                         /**< log likelihood of observing this rollout (constant terms ignored) */
-    double total_cost_;                                             /**< state + control cost */
+    std::vector<double> full_probabilities_;
+    /**< [num_dimensions] probabilities of full trajectory */
+    std::vector<double> full_costs_;
+    /**< [num_dimensions] costs of full trajectory */
+    // std::vector<double>
+
+    double importance_weight_;
+    /**< importance sampling weight */
+    double log_likelihood_;
+    /**< log likelihood of observing this rollout (constant terms ignored) */
+    double total_cost_;
+    /**< state + control cost */
 };
 
-class PolicyImprovement
-{
-public:
+class PolicyImprovement {
+ public:
     /*!
      * Constructor for the policy improvement class
      */
@@ -114,7 +128,8 @@ public:
      * @param noise_variance [num_dimensions] noise standard deviation per dimension
      * @return
      */
-    bool getRollouts(std::vector<std::vector<Eigen::VectorXd> >& rollouts, const std::vector<double>& noise_stddev);
+    bool getRollouts(std::vector<std::vector<Eigen::VectorXd> >& rollouts,
+        const std::vector<double>& noise_stddev);
 
     /**
      * Sets the next set of rollouts, possibly after some filtering. Only new rollouts returned by getRollouts() can be set here.
@@ -172,20 +187,23 @@ public:
 
     void resetAdaptiveNoise();
 
-private:
-
+ private:
     bool initialized_;
 
     int num_dimensions_;
     std::vector<int> num_parameters_;
     int num_time_steps_;
-    //int num_rollouts_reused_;
-    //int num_rollouts_extra_;
+    // int num_rollouts_reused_;
+    // int num_rollouts_extra_;
 
-    int num_rollouts_;                  /**< Number of rollouts currently available */
-    int max_rollouts_;                  /**< Max number of rollouts to use in an update */
-    int min_rollouts_;                  /**< Min number of rollouts to use in an update */
-    int num_rollouts_per_iteration_;    /**< Number of new rollouts to add per iteration */
+    int num_rollouts_;
+    /**< Number of rollouts currently available */
+    int max_rollouts_;
+    /**< Max number of rollouts to use in an update */
+    int min_rollouts_;
+    /**< Min number of rollouts to use in an update */
+    int num_rollouts_per_iteration_;
+    /**< Number of new rollouts to add per iteration */
 
     double cost_scaling_h_;
 
@@ -251,9 +269,8 @@ private:
     bool copyParametersFromPolicy();
 
     bool generateRollouts(const std::vector<double>& noise_variance);
-
 };
 
-}
+}  // namespace stomp
 
-#endif /* POLICYIMPROVEMENT_H_ */
+#endif  // STOMP_INCLUDE_STOMP_POLICY_IMPROVEMENT_H_

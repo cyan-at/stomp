@@ -105,10 +105,10 @@ bool PolicyImprovement::initialize(const int num_time_steps,
   return (initialized_ = true);
 }
 
-bool PolicyImprovement::setNumRollouts(const int min_rollouts,
-                                       const int max_rollouts,
-                                       const int num_rollouts_per_iteration)
-{
+bool PolicyImprovement::setNumRollouts(
+  const int min_rollouts,
+  const int max_rollouts,
+  const int num_rollouts_per_iteration) {
   min_rollouts_ = min_rollouts;
   max_rollouts_ = max_rollouts;
   num_rollouts_per_iteration_ = num_rollouts_per_iteration;
@@ -156,8 +156,8 @@ bool PolicyImprovement::setNumRollouts(const int min_rollouts,
   return true;
 }
 
-bool PolicyImprovement::generateRollouts(const std::vector<double>& noise_stddev)
-{
+bool PolicyImprovement::generateRollouts(
+  const std::vector<double>& noise_stddev) {
   ROS_ASSERT(initialized_);
   ROS_ASSERT(static_cast<int>(noise_stddev.size()) == num_dimensions_);
   if (!adapted_covariance_valid_)
@@ -166,33 +166,27 @@ bool PolicyImprovement::generateRollouts(const std::vector<double>& noise_stddev
   // save the latest policy parameters:
   STOMP_VERIFY(copyParametersFromPolicy());
 
-
-
   // decide how many new rollouts we will generate and discard
   int num_rollouts_discard = 0;
   int num_rollouts_reused = num_rollouts_;
   int prev_num_rollouts = num_rollouts_;
   num_rollouts_gen_ = num_rollouts_per_iteration_;
-  if (num_rollouts_ + num_rollouts_gen_ < min_rollouts_)
-  {
+  if (num_rollouts_ + num_rollouts_gen_ < min_rollouts_) {
     num_rollouts_gen_ = min_rollouts_ - num_rollouts_;
     num_rollouts_discard = 0;
     num_rollouts_reused = num_rollouts_;
   }
-  if (num_rollouts_ + num_rollouts_gen_ > max_rollouts_)
-  {
+  if (num_rollouts_ + num_rollouts_gen_ > max_rollouts_) {
     num_rollouts_discard = num_rollouts_ + num_rollouts_gen_ - max_rollouts_;
     num_rollouts_reused = num_rollouts_ - num_rollouts_discard;
   }
   num_rollouts_ = num_rollouts_reused + num_rollouts_gen_;
 
-  if (num_rollouts_reused > 0)
-  {
+  if (num_rollouts_reused > 0) {
     // find min and max cost for exponential cost scaling
     double min_cost = rollouts_[0].total_cost_;
     double max_cost = min_cost;
-    for (int r=1; r<prev_num_rollouts; ++r)
-    {
+    for (int r = 1; r < prev_num_rollouts; ++r) {
       double c = rollouts_[r].total_cost_;
       if (c < min_cost)
         min_cost = c;
@@ -205,104 +199,110 @@ bool PolicyImprovement::generateRollouts(const std::vector<double>& noise_stddev
 
     // compute importance weights for all rollouts
     rollout_cost_sorter_.clear();
-    for (int r=0; r<prev_num_rollouts; ++r)
-    {
+    for (int r = 0; r < prev_num_rollouts; ++r) {
       // update the noise based on the new parameters:
       rollouts_[r].parameters_ = parameters_;
+
       double new_log_likelihood = 0.0;
-      for (int d=0; d<num_dimensions_; ++d)
-      {
-        // parameters_noise_projected remains the same, compute everything else from it.
-        rollouts_[r].noise_projected_[d] = rollouts_[r].parameters_noise_projected_[d] - parameters_[d];
-        rollouts_[r].noise_[d] = inv_projection_matrix_[d] * rollouts_[r].noise_projected_[d];
-        // TODO FIXME BLAH
-        //rollouts_[r].noise_[d] = rollouts_[r].noise_projected_[d];
-        rollouts_[r].parameters_noise_[d] = parameters_[d] + rollouts_[r].noise_[d];
+      for (int d = 0; d < num_dimensions_; ++d) {
+        // parameters_noise_projected remains the same,
+        // compute everything else from it.
+        rollouts_[r].noise_projected_[d] =
+          rollouts_[r].parameters_noise_projected_[d] - parameters_[d];
+        rollouts_[r].noise_[d] = inv_projection_matrix_[d] *
+          rollouts_[r].noise_projected_[d];
+        // TODO(jim) FIXME BLAH
+        // rollouts_[r].noise_[d] = rollouts_[r].noise_projected_[d];
+        rollouts_[r].parameters_noise_[d] =
+          parameters_[d] + rollouts_[r].noise_[d];
 
-//        new_log_likelihood +=  -num_time_steps_*log(adapted_stddevs_[d])
-//                          -(0.5/(adapted_stddevs_[d]*adapted_stddevs_[d])) * rollouts_[r].noise_[d].transpose()
-//                          * control_costs_[d] * rollouts_[r].noise_[d];
-
+        // new_log_likelihood += -num_time_steps_*log(adapted_stddevs_[d])
+        //   -(0.5/(adapted_stddevs_[d]*adapted_stddevs_[d])) * rollouts_[
+        //     r].noise_[d].transpose()
+        //   * control_costs_[d] * rollouts_[r].noise_[d];
       }
-//      rollouts_[r].importance_weight_ *= exp((new_log_likelihood - rollouts_[r].log_likelihood_)
-//                                             /(num_dimensions_*num_time_steps_));
+      // rollouts_[r].importance_weight_ *= exp((
+      //   new_log_likelihood - rollouts_[r].log_likelihood_)
+      //   /(num_dimensions_*num_time_steps_));
       rollouts_[r].importance_weight_ = 1.0;
       rollouts_[r].log_likelihood_ = new_log_likelihood;
 
-      double cost_prob = exp(-cost_scaling_h_*(rollouts_[r].total_cost_ - min_cost)/cost_denom);
+      double cost_prob = exp(-cost_scaling_h_*(
+        rollouts_[r].total_cost_ - min_cost)/cost_denom);
       double weighted_cost = cost_prob * rollouts_[r].importance_weight_;
-      rollout_cost_sorter_.push_back(std::make_pair(-weighted_cost,r));
+      rollout_cost_sorter_.push_back(
+        std::make_pair(-weighted_cost, r));
     }
 
     std::sort(rollout_cost_sorter_.begin(), rollout_cost_sorter_.end());
 
     // use the best ones: (copy them into reused_rollouts)
-    for (int r=0; r<num_rollouts_reused; ++r)
-    {
+    for (int r = 0; r < num_rollouts_reused; ++r) {
       int reuse_index = rollout_cost_sorter_[r].second;
       reused_rollouts_[r] = rollouts_[reuse_index];
-      //double reuse_cost = rollout_cost_sorter_[r].first;
+      // double reuse_cost = rollout_cost_sorter_[r].first;
     }
 
     // copy them back from reused_rollouts_ into rollouts_
-    for (int r=0; r<num_rollouts_reused; ++r)
-    {
+    for (int r = 0; r < num_rollouts_reused; ++r) {
       rollouts_[num_rollouts_gen_+r] = reused_rollouts_[r];
 
-//      ROS_INFO("Reuse %d, cost = %lf, weight=%lf",
-//               r, rollouts_[num_rollouts_gen_+r].total_cost_,
-//               rollouts_[num_rollouts_gen_+r].importance_weight_);
+      // ROS_INFO("Reuse %d, cost = %lf, weight=%lf",
+      // r, rollouts_[num_rollouts_gen_+r].total_cost_,
+      // rollouts_[num_rollouts_gen_+r].importance_weight_);
     }
   }
 
   // generate new rollouts
-  for (int d=0; d<num_dimensions_; ++d)
-  {
+  for (int d = 0; d < num_dimensions_; ++d) {
     // compute parameters for mean-shifted sampling
     // variance = (var_1 + var_2)^-1
     double l1 = control_cost_weight_;
     double l2 = 1.0/(adapted_stddevs_[d]*adapted_stddevs_[d]);
     double new_stddev = 1.0/sqrt(l1 + l2);
 
-    //new_stddev = adapted_stddevs_[d];
+    // new_stddev = adapted_stddevs_[d];
 
     double p1 = l1 / (l1 + l2);
     double p2 = l2 / (l1 + l2);
     ROS_INFO("d = %d, l1 = %f, l2 = %f, p1 = %f, p2 = %f", d, l1, l2, p1, p2);
 
-    for (int r=0; r<num_rollouts_gen_; ++r)
-    {
+    for (int r = 0; r < num_rollouts_gen_; ++r) {
       noise_generators_[d].sample(tmp_noise_[d]);
 
       rollouts_[r].parameters_noise_[d] =
-          p1 * policy_->getMinControlCostParameters()[d] + p2 * parameters_[d] // the mean
-          + new_stddev * tmp_noise_[d]; // the noise
+          p1 * policy_->getMinControlCostParameters()[d]
+            + p2 * parameters_[d]  // the mean
+            + new_stddev * tmp_noise_[d];  // the noise
 
-      //rollouts_[r].noise_[d] = new_stddev*tmp_noise_[d];
-      rollouts_[r].parameters_[d] = parameters_[d];// + rollouts_[r].noise_[d];
-      rollouts_[r].noise_[d] = rollouts_[r].parameters_noise_[d] - rollouts_[r].parameters_[d];
-      //rollouts_[r].parameters_noise_[d] = parameters_[d] + rollouts_[r].noise_[d];
+      // rollouts_[r].noise_[d] = new_stddev*tmp_noise_[d];
+      rollouts_[r].parameters_[d] = parameters_[d];
+      // + rollouts_[r].noise_[d];
+      rollouts_[r].noise_[d] =
+        rollouts_[r].parameters_noise_[d] - rollouts_[r].parameters_[d];
+      // rollouts_[r].parameters_noise_[d] =
+      //   parameters_[d] + rollouts_[r].noise_[d];
     }
   }
 
   // compute likelihoods of new rollouts
-  for (int r=0; r<num_rollouts_gen_; ++r)
-  {
+  for (int r = 0; r < num_rollouts_gen_; ++r) {
+    rollouts_[r].importance_weight_ = 1.0;
+
 //    rollouts_[r].log_likelihood_ = 0.0;
 //    for (int d=0; d<num_dimensions_; ++d)
 //    {
-//      rollouts_[r].log_likelihood_ += -num_time_steps_*log(adapted_stddevs_[d])
-//                                      -(0.5/(adapted_stddevs_[d]*adapted_stddevs_[d]))
-//                                      * rollouts_[r].noise_[d].transpose() * control_costs_[d]
-//                                      * rollouts_[r].noise_[d];
+      // rollouts_[r].log_likelihood_ +=
+      //   -num_time_steps_*log(adapted_stddevs_[d])
+      //   -(0.5/(adapted_stddevs_[d]*adapted_stddevs_[d]))
+      //   * rollouts_[r].noise_[d].transpose() * control_costs_[d]
+      //   * rollouts_[r].noise_[d];
 //    }
-    rollouts_[r].importance_weight_ = 1.0;
-    //ROS_INFO("New rollout ln lik = %lf", rollouts_[r].log_likelihood_);
+    // ROS_INFO("New rollout ln lik = %lf", rollouts_[r].log_likelihood_);
   }
 
   // add the noiseless rollout if it exists:
-  if (noiseless_rollout_valid_)
-  {
+  if (noiseless_rollout_valid_) {
     rollouts_[num_rollouts_] = noiseless_rollout_;
     ++num_rollouts_;
   }
@@ -310,28 +310,26 @@ bool PolicyImprovement::generateRollouts(const std::vector<double>& noise_stddev
   return true;
 }
 
-bool PolicyImprovement::getRollouts(std::vector<std::vector<Eigen::VectorXd> >& rollouts, const std::vector<double>& noise_variance)
-{
-    if (!generateRollouts(noise_variance))
-    {
+bool PolicyImprovement::getRollouts(
+  std::vector<std::vector<Eigen::VectorXd> >& rollouts,
+  const std::vector<double>& noise_variance) {
+    if (!generateRollouts(noise_variance)) {
         ROS_ERROR("Failed to generate rollouts.");
         return false;
     }
 
     rollouts.clear();
-    for (int r=0; r<num_rollouts_gen_; ++r)
-    {
+    for (int r = 0; r < num_rollouts_gen_; ++r) {
         rollouts.push_back(rollouts_[r].parameters_noise_);
     }
 
     return true;
 }
 
-bool PolicyImprovement::getProjectedRollouts(std::vector<std::vector<Eigen::VectorXd> >& rollouts)
-{
+bool PolicyImprovement::getProjectedRollouts(
+  std::vector<std::vector<Eigen::VectorXd> >& rollouts) {
   rollouts.clear();
-  for (int r=0; r<num_rollouts_gen_; ++r)
-  {
+  for (int r = 0; r < num_rollouts_gen_; ++r) {
       rollouts.push_back(rollouts_[r].parameters_noise_projected_);
   }
 
@@ -339,31 +337,29 @@ bool PolicyImprovement::getProjectedRollouts(std::vector<std::vector<Eigen::Vect
 }
 
 
-bool PolicyImprovement::setRollouts(const std::vector<std::vector<Eigen::VectorXd> >& rollouts)
-{
+bool PolicyImprovement::setRollouts(
+  const std::vector<std::vector<Eigen::VectorXd> >& rollouts) {
   ROS_ASSERT((int)rollouts.size() == num_rollouts_gen_);
-  for (int r=0; r<num_rollouts_gen_; ++r)
-  {
+  for (int r = 0; r < num_rollouts_gen_; ++r) {
     rollouts_[r].parameters_noise_ = rollouts[r];
     computeNoise(rollouts_[r]);
   }
   return true;
 }
 
-void PolicyImprovement::clearReusedRollouts()
-{
+void PolicyImprovement::clearReusedRollouts() {
   num_rollouts_ = 0;
 }
 
-bool PolicyImprovement::setRolloutCosts(const Eigen::MatrixXd& costs, const double control_cost_weight, std::vector<double>& rollout_costs_total)
-{
+bool PolicyImprovement::setRolloutCosts(
+  const Eigen::MatrixXd& costs,
+  const double control_cost_weight, std::vector<double>& rollout_costs_total) {
   ROS_ASSERT(initialized_);
 
   control_cost_weight_ = control_cost_weight;
   computeRolloutControlCosts();
 
-  for (int r=0; r<num_rollouts_gen_; ++r)
-  {
+  for (int r = 0; r < num_rollouts_gen_; ++r) {
     rollouts_[r].state_costs_ = costs.row(r).transpose();
   }
 
@@ -418,31 +414,27 @@ bool PolicyImprovement::setNoiselessRolloutCosts(const Eigen::VectorXd& costs, d
   return true;
 }
 
-bool PolicyImprovement::computeProjectedNoise()
-{
-    for (int r=0; r<num_rollouts_; ++r)
-    {
+bool PolicyImprovement::computeProjectedNoise() {
+    for (int r = 0; r < num_rollouts_; ++r) {
         computeProjectedNoise(rollouts_[r]);
     }
     return true;
 }
 
-bool PolicyImprovement::computeProjectedNoise(Rollout& rollout)
-{
-  //ros::WallTime start_time = ros::WallTime::now();
-  for (int d=0; d<num_dimensions_; ++d)
-  {
+bool PolicyImprovement::computeProjectedNoise(Rollout& rollout) {
+  // ros::WallTime start_time = ros::WallTime::now();
+  for (int d = 0; d < num_dimensions_; ++d) {
     rollout.noise_projected_[d] = projection_matrix_[d] * rollout.noise_[d];
-    rollout.parameters_noise_projected_[d] = rollout.parameters_[d] + rollout.noise_projected_[d];
+    rollout.parameters_noise_projected_[d] =
+      rollout.parameters_[d] + rollout.noise_projected_[d];
   }
-  //ROS_INFO("Noise projection took %f seconds", (ros::WallTime::now() - start_time).toSec());
+  // ROS_INFO("Noise projection took %f seconds",
+  //   (ros::WallTime::now() - start_time).toSec());
   return true;
 }
 
-bool PolicyImprovement::computeRolloutControlCosts()
-{
-    for (int r=0; r<num_rollouts_; ++r)
-    {
+bool PolicyImprovement::computeRolloutControlCosts() {
+    for (int r = 0; r < num_rollouts_; ++r) {
         computeRolloutControlCosts(rollouts_[r]);
     }
     return true;
@@ -493,15 +485,12 @@ bool PolicyImprovement::computeRolloutCumulativeCosts(std::vector<double>& rollo
     return true;
 }
 
-bool PolicyImprovement::computeRolloutProbabilities()
-{
-    for (int d=0; d<num_dimensions_; ++d)
-    {
+bool PolicyImprovement::computeRolloutProbabilities() {
+    for (int d = 0; d < num_dimensions_; ++d) {
       // find min and max cost over all rollouts:
       double min_cost = rollouts_[0].cumulative_costs_[d].minCoeff();
       double max_cost = rollouts_[0].cumulative_costs_[d].maxCoeff();
-      for (int r=1; r<num_rollouts_; ++r)
-      {
+      for (int r = 1; r < num_rollouts_; ++r) {
         double min_r = rollouts_[r].cumulative_costs_[d].minCoeff();
         double max_r = rollouts_[r].cumulative_costs_[d].maxCoeff();
         if (min_cost > min_r)
@@ -510,9 +499,7 @@ bool PolicyImprovement::computeRolloutProbabilities()
           max_cost = max_r;
       }
 
-        for (int t=0; t<num_time_steps_; t++)
-        {
-
+        for (int t = 0; t < num_time_steps_; t++) {
 //            // find min and max cost over all rollouts:
 //            double min_cost = rollouts_[0].cumulative_costs_[d](t);
 //            double max_cost = min_cost;
@@ -535,14 +522,12 @@ bool PolicyImprovement::computeRolloutProbabilities()
                 denom = 1e-8;
 
             double p_sum = 0.0;
-            for (int r=0; r<num_rollouts_; ++r)
-            {
+            for (int r=0; r<num_rollouts_; ++r) {
                 rollouts_[r].probabilities_[d](t) = rollouts_[r].importance_weight_ *
                     exp(-cost_scaling_h_*(rollouts_[r].cumulative_costs_[d](t) - min_cost)/denom);
                 p_sum += rollouts_[r].probabilities_[d](t);
             }
-            for (int r=0; r<num_rollouts_; ++r)
-            {
+            for (int r=0; r<num_rollouts_; ++r) {
                 rollouts_[r].probabilities_[d](t) /= p_sum;
             }
 
@@ -579,48 +564,44 @@ bool PolicyImprovement::computeRolloutProbabilities()
     return true;
 }
 
-bool PolicyImprovement::computeParameterUpdates()
-{
-  for (int d=0; d<num_dimensions_; ++d)
-  {
+bool PolicyImprovement::computeParameterUpdates() {
+  for (int d = 0; d < num_dimensions_; ++d) {
     parameter_updates_[d] = MatrixXd::Zero(num_time_steps_, num_parameters_[d]);
 
-    for (int r=0; r<num_rollouts_; ++r)
-    {
+    for (int r = 0; r < num_rollouts_; ++r) {
       parameter_updates_[d].row(0).transpose() +=
-          (rollouts_[r].noise_[d].array() * rollouts_[r].probabilities_[d].array()).matrix();
+          (rollouts_[r].noise_[d].array() *
+            rollouts_[r].probabilities_[d].array()).matrix();
     }
 
-    if (use_covariance_matrix_adaptation_)
-    {
-
+    if (use_covariance_matrix_adaptation_) {
       // true CMA method
-//      adapted_covariances_[d] = Eigen::MatrixXd::Zero(num_time_steps_, num_time_steps_);
-//      for (int r=0; r<num_rollouts_; ++r)
-//      {
-//        adapted_covariances_[d] += rollouts_[r].full_probabilities_[d] *
-//            rollouts_[r].noise_[d] * rollouts_[r].noise_[d].transpose();
-//      }
-//
-//      ROS_INFO_STREAM("Covariance for dimension " << d << " = " << adapted_covariances_[d]);
-//      adapted_stddevs_[d] = 1.0;
-//      adapted_covariance_inverse_[d] = adapted_covariances_[d].fullPivLu().inverse();
-//      noise_generators_[d] = MultivariateGaussian(VectorXd::Zero(num_parameters_[d]), adapted_covariances_[d]);
+      // adapted_covariances_[d] = Eigen::MatrixXd::Zero(num_time_steps_, num_time_steps_);
+      // for (int r=0; r<num_rollouts_; ++r)
+      // {
+      //   adapted_covariances_[d] += rollouts_[r].full_probabilities_[d] *
+      //       rollouts_[r].noise_[d] * rollouts_[r].noise_[d].transpose();
+      // }
+
+      // ROS_INFO_STREAM("Covariance for dimension " << d << " = " << adapted_covariances_[d]);
+      // adapted_stddevs_[d] = 1.0;
+      // adapted_covariance_inverse_[d] = adapted_covariances_[d].fullPivLu().inverse();
+      // noise_generators_[d] = MultivariateGaussian(VectorXd::Zero(num_parameters_[d]), adapted_covariances_[d]);
 
       // one-dimensional CMA-ish
-//      double var = 0.0;
-//      for (int r=0; r<num_rollouts_; ++r)
-//      {
-//        double dist = rollouts_[r].noise_[d].transpose() *
-//            adapted_covariance_inverse_[d] * rollouts_[r].noise_[d];
-//        var += rollouts_[r].full_probabilities_[d] * dist;
-//        //printf("Rollout %d, dist = %f", r, dist);
-//      }
-//      var /= num_time_steps_;
-//      adapted_stddevs_[d] = 0.8 * adapted_stddevs_[d] + 0.2 * sqrt(var);
-//      ROS_INFO("Dimension %d: new stddev = %f", d, adapted_stddevs_[d]);
+      // double var = 0.0;
+      // for (int r=0; r<num_rollouts_; ++r)
+      // {
+      //   double dist = rollouts_[r].noise_[d].transpose() *
+      //       adapted_covariance_inverse_[d] * rollouts_[r].noise_[d];
+      //   var += rollouts_[r].full_probabilities_[d] * dist;
+      //   //printf("Rollout %d, dist = %f", r, dist);
+      // }
+      // var /= num_time_steps_;
+      // adapted_stddevs_[d] = 0.8 * adapted_stddevs_[d] + 0.2 * sqrt(var);
+      // ROS_INFO("Dimension %d: new stddev = %f", d, adapted_stddevs_[d]);
 
-      double frob_stddev = 0.0, numer=0.0, denom=0.0;
+      double frob_stddev = 0.0, numer = 0.0, denom = 0.0;
 
       /*
       // true CMA method + minimization of frobenius norm
@@ -649,10 +630,9 @@ bool PolicyImprovement::computeParameterUpdates()
       // new KL divergence M projection / ML estimation method
       denom = 0.0;
       numer = 0.0;
-      for (int r=0; r<num_rollouts_; ++r)
-      {
-    	  denom += rollouts_[r].full_probabilities_[d];
-    	  numer += rollouts_[r].full_probabilities_[d] *
+      for (int r = 0; r < num_rollouts_; ++r) {
+        denom += rollouts_[r].full_probabilities_[d];
+        numer += rollouts_[r].full_probabilities_[d] *
     			  double(rollouts_[r].noise_[d].transpose() * control_costs_[d] * rollouts_[r].noise_[d]);
       }
       frob_stddev = sqrt(numer/(denom*num_time_steps_));
@@ -671,18 +651,16 @@ bool PolicyImprovement::computeParameterUpdates()
 //      ROS_INFO("Dimension %d: new stddev = %f", d, adapted_stddevs_[d]);
 
       adapted_covariance_valid_ = true;
-
     }
 
     // reweighting the updates per time-step
     double weight = 0.0;
     double weight_sum = 0.0;
     double max_weight = 0.0;
-    for (int t=0; t<num_time_steps_; ++t)
-    {
+    for (int t = 0; t < num_time_steps_; ++t) {
       weight = time_step_weights_[d][t];
       weight_sum += weight;
-      parameter_updates_[d](0,t) *= weight;
+      parameter_updates_[d](0, t) *= weight;
       if (weight > max_weight)
         max_weight = weight;
     }
@@ -690,22 +668,23 @@ bool PolicyImprovement::computeParameterUpdates()
       weight_sum = 1e-6;
 
     double divisor = weight_sum/num_time_steps_;
-
-    if (max_weight > divisor)
-    {
+    if (max_weight > divisor) {
       divisor = max_weight;
     }
+
+    // Table 1, Exression 4 Compute delta_theta = M * delta_theta
+    // M being divisor and projection_matrix_
     parameter_updates_[d].row(0) /= divisor;
 
-    parameter_updates_[d].row(0).transpose() = projection_matrix_[d]*parameter_updates_[d].row(0).transpose();
-
+    parameter_updates_[d].row(0).transpose() =
+      projection_matrix_[d]*parameter_updates_[d].row(0).transpose();
   }
 
   return true;
 }
 
-bool PolicyImprovement::improvePolicy(std::vector<Eigen::MatrixXd>& parameter_updates)
-{
+bool PolicyImprovement::improvePolicy(
+  std::vector<Eigen::MatrixXd>& parameter_updates) {
     ROS_ASSERT(initialized_);
 
     //ros::WallTime start_time = ros::WallTime::now();

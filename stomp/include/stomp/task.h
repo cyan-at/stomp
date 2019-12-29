@@ -69,16 +69,17 @@ public:
      * @param weighted_feature_values num_time_steps x num_features matrix of weighted feature values per time step
      * @return
      */
-    virtual bool execute(std::vector<Eigen::VectorXd>& parameters,
-                         std::vector<Eigen::VectorXd>& projected_parameters,
-                         Eigen::VectorXd& costs,
-                         Eigen::MatrixXd& weighted_feature_values,
-                         const int iteration_number,
-                         const int rollout_number,
-                         int thread_id,
-                         bool compute_gradients,
-                         std::vector<Eigen::VectorXd>& gradients,
-                         bool& validity) = 0;
+    virtual bool execute(
+        const std::vector<Eigen::VectorXd>& parameters,
+        const std::vector<Eigen::VectorXd>& projected_parameters,
+        Eigen::VectorXd* costs,
+        Eigen::MatrixXd* weighted_feature_values,
+        const int iteration_number,
+        const int rollout_number,
+        int thread_id,
+        bool compute_gradients,
+        std::vector<Eigen::VectorXd>& gradients,
+        bool& validity) = 0;
 
     /**
      * Filters the given parameters - for eg, clipping of joint limits

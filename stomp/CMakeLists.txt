@@ -34,6 +34,9 @@ add_executable(test_stomp2d
 add_executable(test_cmp
   test/test_cmp.cpp
 )
+add_executable(stomp_2d_00
+  test/stomp_2d_00.cpp
+)
 #add_executable(test_eigen_perf
 #  test/eigen_perf_test.cpp
 #)
@@ -55,6 +58,8 @@ add_definitions(${EIGEN3_DEFINITIONS} ${OpenMP_CXX_FLAGS})
 
 target_link_libraries(test_stomp2d stomp)
 target_link_libraries(test_cmp stomp)
+target_link_libraries(stomp_2d_00 stomp ${catkin_LIBRARIES} ${OpenMP_CXX_FLAGS})
+
 target_link_libraries(stomp ${catkin_LIBRARIES} ${OpenMP_CXX_FLAGS})
 #target_link_libraries(test_eigen_perf ${Eigen_LIBRARIES} ${OpenMP_CXX_FLAGS})
 #target_link_libraries(stomp_constrained_test ${catkin_LIBRARIES} ${OpenMP_CXX_FLAGS})

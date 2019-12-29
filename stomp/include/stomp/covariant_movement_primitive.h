@@ -221,15 +221,14 @@ private:
 
 // inline functions follow
 
-inline bool CovariantMovementPrimitive::getParameters(std::vector<Eigen::VectorXd>& parameters)
-{
-    if (int(parameters.size()) != num_dimensions_)
-    {
+inline bool CovariantMovementPrimitive::getParameters(
+    std::vector<Eigen::VectorXd>& parameters) {
+    if (static_cast<int>(parameters.size()) != num_dimensions_) {
         parameters.resize(num_dimensions_, Eigen::VectorXd::Zero(num_time_steps_));
     }
-    for (int d=0; d<num_dimensions_; ++d)
-    {
-        parameters[d] = parameters_all_[d].segment(free_vars_start_index_, num_vars_free_);
+    for (int d = 0; d < num_dimensions_; ++d) {
+        parameters[d] = parameters_all_[d].segment(
+            free_vars_start_index_, num_vars_free_);
     }
     return true;
 }
