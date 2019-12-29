@@ -178,24 +178,25 @@ bool STOMP::doGenRollouts(int iteration_number) {
   return true;
 }
 
-bool STOMP::doExecuteRollouts(int iteration_number)
-{
+// Expression 2, invoke Expression 2a, collect costs S(theta_k_i)
+bool STOMP::doExecuteRollouts(int iteration_number) {
   std::vector<Eigen::VectorXd> gradients;
 #pragma omp parallel for num_threads(num_threads_)
-  for (int r=0; r<int(rollouts_.size()); ++r)
-  {
+  for (int r = 0; r < static_cast<int>(rollouts_.size()); ++r) {
     int thread_id = omp_get_thread_num();
-//    printf("thread_id = %d\n", thread_id);
+    // printf("thread_id = %d\n", thread_id);
     bool validity;
     STOMP_VERIFY(task_->execute(
       rollouts_[r],
+      // rollouts is 'parameters' in this func
+      // used for 'pos' terms to evaluate cost
       projected_rollouts_[r],
+      // projected_rollouts is not really used
       &tmp_rollout_cost_[r],
       &tmp_rollout_weighted_features_[r],
       iteration_number, r, thread_id, false, gradients, validity));
   }
-  for (int r=0; r<int(rollouts_.size()); ++r)
-  {
+  for (int r = 0; r < static_cast<int>(rollouts_.size()); ++r) {
     rollout_costs_.row(r) = tmp_rollout_cost_[r].transpose();
     ROS_DEBUG("Rollout %d, cost = %lf", r+1, tmp_rollout_cost_[r].sum());
   }
@@ -203,15 +204,14 @@ bool STOMP::doExecuteRollouts(int iteration_number)
   return true;
 }
 
-bool STOMP::doRollouts(int iteration_number)
-{
+bool STOMP::doRollouts(int iteration_number) {
   doGenRollouts(iteration_number);
   doExecuteRollouts(iteration_number);
   return true;
 }
 
 bool STOMP::doUpdate(int iteration_number) {
-  // TODO: fix this std::vector<>
+  // TODO(jim): fix this std::vector<>
   std::vector<double> all_costs;
   STOMP_VERIFY(policy_improvement_.setRolloutCosts(
     rollout_costs_, control_cost_weight_, all_costs));

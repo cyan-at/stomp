@@ -123,6 +123,7 @@ int Stomp2DTest::run() {
         fprintf(stddev_file, "\n");
       }
     } else {
+      // printf("running single iteration\n");
       stomp_->runSingleIteration(i);
       stomp_->getAllRollouts(rollouts);
       stomp_->getNoiselessRollout(noiseless_rollout);
