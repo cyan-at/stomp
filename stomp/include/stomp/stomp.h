@@ -40,7 +40,7 @@
 #include <ros/ros.h>
 #include <rosbag/bag.h>
 #include <boost/shared_ptr.hpp>
-
+#include "std_msgs/Float64.h"
 
 #include <stomp/covariant_movement_primitive.h>
 #include <stomp/task.h>
@@ -84,6 +84,14 @@ class STOMP {
  private:
     bool initialized_;
     ros::NodeHandle node_handle_;
+
+    // 2019-12-27
+    // publish the Q(theta) trajectory cost aka total_cost
+    ros::Publisher trajectory_cost_pub_;
+    std_msgs::Float64 trajectory_cost_msg;
+
+    ros::Publisher best_trajectory_cost_pub_;
+    std_msgs::Float64 best_trajectory_cost_msg;
 
     int num_threads_;
 

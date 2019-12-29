@@ -57,6 +57,19 @@ STOMP::~STOMP() {}
 bool STOMP::initialize(
   const ros::NodeHandle& node_handle, boost::shared_ptr<stomp::Task> task) {
   node_handle_ = node_handle;
+
+  trajectory_cost_pub_ =
+    node_handle_.advertise<
+      std_msgs::Float64>(
+        "stomp_trajectory_cost", 1);
+  // TODO(jim) 2019-12-27 refresh what consequences
+  // of buffer size are, was mentioned in auditions
+
+  best_trajectory_cost_pub_ =
+    node_handle_.advertise<
+      std_msgs::Float64>(
+        "best_stomp_trajectory_cost", 1);
+
   STOMP_VERIFY(readParameters());
 
   task_ = task;
@@ -255,6 +268,15 @@ bool STOMP::doNoiselessRollout(int iteration_number) {
     best_noiseless_parameters_ = parameters_;
     best_noiseless_cost_ = total_cost;
   }
+
+  // 2019-12-27 publish and rqt_plot
+  // these costs to see
+  trajectory_cost_msg.data = total_cost;
+  trajectory_cost_pub_.publish(trajectory_cost_msg);
+
+  best_trajectory_cost_msg.data = best_noiseless_cost_;
+  best_trajectory_cost_pub_.publish(best_trajectory_cost_msg);
+
   last_noiseless_rollout_valid_ = validity;
   return true;
 }
