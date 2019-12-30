@@ -1,0 +1,12 @@
+sanity check that the initial_trajectory is correctly multiplied to the sparse matrix
+
+
+sidefinding x toolpath generation:
+  pick a point in the cyclical side or acyclical side that is 'visible' (semantic == unoccluded line from point to all points on line, something about existence of occlusion here), move around if it is or need multiple (this is a useful outcome also)
+
+  from that unoccluded point, all points on each line segment in that side can be parameterized as a distance off the point
+  and if you decrease that distance, you are 'radially tesseelating' the line closer or further from the point
+
+  question: does this dialing => tesselation depend on where the point is? should not be
+
+  for multiple line segments to a side, their intersection points will change

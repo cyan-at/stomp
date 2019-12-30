@@ -1,0 +1,238 @@
+who sets the initial trajectory, can we modify start and end points?
+***
+  this is implicitly done setting the specific parts of the initial_trajectory matrix
+  it was set at 0.01, 0.01 to 0.99, 0.99
+
+##################################################################
+
+what are the control vectors of the path? how are they tweaked with deltas during iteration?
+***
+  parameters_ are the control vectors theta/u
+
+
+  in the paper, this this u = u + du / theta = theta + dtheta
+
+  where is du / dtheta calculated, how is it calculated?
+
+##################################################################
+
+STOMP2DTest's runSingleIteration vs execute?
+what happens every iteration of STOMP? what classes are involved and steps?
+***
+
+  runSingleIteration:
+    doRollouts(iteration_number);
+      doGenRollouts(iteration_number);
+
+        std::vector<double> noise;
+        noise.resize(num_dimensions_);
+        for (int i = 0; i < num_dimensions_; ++i) {
+          noise[i] = noise_stddev_[i] * pow(noise_decay_[i], iteration_number-1);
+        }
+
+        // get rollouts
+        STOMP_VERIFY(policy_improvement_.getRollouts(rollouts_, noise));
+
+
+          if (!generateRollouts(noise_variance)) {
+              ROS_ERROR("Failed to generate rollouts.");
+              return false;
+          }
+
+          rollouts.clear();
+          for (int r = 0; r < num_rollouts_gen_; ++r) {
+              rollouts.push_back(rollouts_[r].parameters_noise_);
+          }
+
+          return true;
+
+          ***
+          generateRollouts is important!!!
+          ***
+
+
+        // filter rollouts and set them back if filtered:
+        bool filtered = false;
+        for (unsigned int r = 0; r < rollouts_.size(); ++r) {
+          if (task_->filter(rollouts_[r], r, 0))
+            filtered = true;
+        }
+        if (filtered) {
+          policy_improvement_.setRollouts(rollouts_);
+        }
+        STOMP_VERIFY(policy_improvement_.computeProjectedNoise());
+
+        // overwrite the rollouts with the projected versions
+        policy_improvement_.getProjectedRollouts(projected_rollouts_);
+
+      doExecuteRollouts(iteration_number);
+
+        std::vector<Eigen::VectorXd> gradients;
+        #pragma omp parallel for num_threads(num_threads_)
+        for (int r = 0; r < static_cast<int>(rollouts_.size()); ++r) {
+          int thread_id = omp_get_thread_num();
+          // printf("thread_id = %d\n", thread_id);
+          bool validity;
+          STOMP_VERIFY(task_->execute(
+            rollouts_[r],
+            projected_rollouts_[r],
+            &tmp_rollout_cost_[r],
+            &tmp_rollout_weighted_features_[r],
+            iteration_number, r, thread_id, false, gradients, validity));
+        }
+        for (int r = 0; r < static_cast<int>(rollouts_.size()); ++r) {
+          rollout_costs_.row(r) = tmp_rollout_cost_[r].transpose();
+          ROS_DEBUG("Rollout %d, cost = %lf", r+1, tmp_rollout_cost_[r].sum());
+        }
+
+    doUpdate(iteration_number);
+      std::vector<double> all_costs;
+      STOMP_VERIFY(policy_improvement_.setRolloutCosts(
+        rollout_costs_, control_cost_weight_, all_costs));
+
+      // std::cout << "all costs" << std::endl;
+      // for (int i = 0; i < all_costs.size(); ++i) {
+      //   std::cout << "cost " << all_costs.at(i) << std::endl;
+      // }
+      // std::cout << "###################" << std::endl;
+
+      // improve the policy
+      STOMP_VERIFY(policy_improvement_.improvePolicy(
+        parameter_updates_));
+      STOMP_VERIFY(policy_improvement_.getTimeStepWeights(
+        time_step_weights_));
+      STOMP_VERIFY(policy_->updateParameters(
+        parameter_updates_, time_step_weights_));
+
+    doNoiselessRollout(iteration_number);
+
+      std::vector<Eigen::VectorXd> gradients;
+      STOMP_VERIFY(policy_->getParameters(parameters_));
+      bool validity = false;
+      STOMP_VERIFY(task_->execute(
+        parameters_,
+        parameters_,
+        &tmp_rollout_cost_[0],
+        &tmp_rollout_weighted_features_[0],
+        iteration_number,
+        -1, 0, false, gradients, validity));
+      double total_cost;
+      policy_improvement_.setNoiselessRolloutCosts(
+        tmp_rollout_cost_[0], total_cost);
+
+      ROS_INFO("Noiseless cost = %lf", total_cost);
+
+      if (total_cost < best_noiseless_cost_) {
+        best_noiseless_parameters_ = parameters_;
+        best_noiseless_cost_ = total_cost;
+      }
+      last_noiseless_rollout_valid_ = validity;
+      return true;
+
+  <see audit and relation to paper in _table1_audit.txt>
+
+##################################################################
+
+what is CovariantMovementPrimitive and how is it used?
+what is it in the paper?
+***
+  during iteration
+    ::updateParameters for Table1,Expression5 updates control 'parameters_all_'
+    ::computeControlCosts to compute control costs, which is part of total trajectory cost
+
+##################################################################
+
+what is PolicyImprovement and how is it used?
+what is it in the paper?
+***
+  during iteration
+    high level
+      generate k noisy rollouts
+      compute S(), state costs and P
+      calculate deltas to apply
+    ::doGenRollouts, getRollouts, generateRollouts
+      makes the k noisy trajectories
+    ::doExecuteRollouts, doUpdate, computeRolloutCumulativeCosts, etc.
+      for each k, get state costs
+    ::improvePolicy, computeRolloutProbabilities
+      for each k, get P(theta_k_i)
+    ::computeParameterUpdates, etc.
+      for each k, get d_theta = P_theta_i_k * noise_k_i
+      d_theta = M * d_theta
+      parameter_updates_
+    ::setNoiselessRolloutCosts invokes cost calculation
+
+##################################################################
+
+what is a Noisy Rollout?
+in the paper?
+***
+
+  it is the K noisy trajectories mentioned in Table 1
+
+what is a Noiseless Rollout?
+in the paper?
+***
+  it is 'noiseless' because we only run the new updated
+  parameters (theta/u) through `execute` so we can query state costs
+
+##################################################################
+
+can we capture the termination condition?
+can we plot the costs and see it bouncing around?
+set termination condition to when it starts to bounce around n times?
+generalizable semantics?
+***
+  done
+  see b_00, b_01 plots
+
+##################################################################
+
+what do the result all_parameters look like?
+can we introduce a 3rd dimension to the path, to the cost function
+relate control vectors / fk to that?
+***
+  int Stomp2DTest::run() {
+    // initialize rviz publisher
+    rviz_pub_ = node_handle_.advertise<visualization_msgs::Marker>(
+      "visualization", 100, false);
+    srand(time(NULL));
+    num_dimensions_ = 2;
+
+  evaluateMapCost modify / replace with function that computes
+  arm costs as expected
+
+  find / modify how goals are expressed to be in 3D
+
+##################################################################
+
+what happens at the beginning COMPLETELY, steps and classes involved?
+***
+  refactor things to be on a blackboard
+  or list out everything as if it was on a blackboard in the beginning
+  so you can inspect everything on the blackboard
+  event-dispatch as a starting point to understand new algorithms!!!
+    what are the actors involved (classes)
+    what kinds of things do they transduce to and from phenomenon?
+    how do they communicate with each other
+      how do they consume / produce?
+
+  looks like these classes are the core:
+    STOMP
+    PolicyImprovement
+    CovariantMovementPrimitive
+    Stomp2DTest
+
+##################################################################
+
+after modifying the num_dimensions to 6, noiseless cost is nan
+why?
+
+##################################################################
+
+##################################################################
+
+##################################################################
+
+##################################################################
+

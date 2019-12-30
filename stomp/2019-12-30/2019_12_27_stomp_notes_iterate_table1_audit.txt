@@ -1,0 +1,82 @@
+1. you make n rollouts aka k noisy trajectories
+STOMP::doRollout
+  STOMP::doGenRollouts
+    PolicyImprovement::getRollouts
+    PolicyImprovement::generateRollouts
+  
+2. for each rollout / k noisy traj, compute
+STOMP::doRollout
+  STOMP::doExecuteRollouts
+    2.a. S(theta_k_i) = q(theta_k_i)
+    Stomp2DTest::execute
+    updates STOMP::rollout_costs_
+
+STOMP::doUpdate
+  PolicyImprovement::setRolloutCosts
+  PolicyImprovement::computeRolloutCumulativeCosts(rollout_costs_total)
+    PolicyImprovement::computeRolloutCumulativeCosts(Rollout& rollout)
+
+  PolicyImprovement::improvePolicy
+    PolicyImprovement::computeRolloutProbabilities()!!!!!
+      time_step_weights_ is always set to all 1.0's
+    every rollout's probabilities, full_probabilities_ is updated
+    2.b. P(theta_k_i) = ...
+
+    PolicyImprovement::computeParameterUpdates()
+    3. For each step, compute d_theta = P_theta_i_k * noise_k_i
+      line 575
+      parameter_updates_[d].row(0).transpose() +=
+      (rollouts_[r].noise_[d].array() * rollouts_[r].probabilities_[d].array()).matrix();
+    // Table 1, Exression 4 Compute delta_theta = M * delta_theta
+    // M being divisor and projection_matrix_
+      line 677
+      parameter_updates_[d].row(0) /= divisor;
+      parameter_updates_[d].row(0).transpose() =
+        projection_matrix_[d]*parameter_updates_[d].row(0).transpose();
+    parameter_updates_ is updated
+      the policy_'s getParameters gets the 'u/theta' control vector?
+
+  CovariantMovementPrimitive::updateParameters
+    parameters_all_ is updated f(parameter_updates, time_step_weights)
+      time_step_weights not used
+  // Table 1, Expression 5 theta = theta + delta_theta
+
+STOMP::doNoiselessRollout
+  // this is really for primarily Table 1, Expression 6
+  // Q(theta) = Sum(q(theta_i) + 1/2theta.T*R*theta)
+
+  // it's called a noiseless rollout
+  // because we don't introduce noise to the trajectory
+  // and only run it through execute
+  // to get the state costs for the trajectory
+
+  STOMP_VERIFY(task_->execute(
+    parameters_,
+    parameters_,
+    &tmp_rollout_cost_[0],
+    &tmp_rollout_weighted_features_[0],
+    iteration_number,
+    -1, 0, false, gradients, validity));
+  policy_improvement_.setNoiselessRolloutCosts(
+    tmp_rollout_cost_[0], total_cost);
+      tmp_rollout_cost_ is the state costs aka q(theta_i)s
+
+  PolicyImprovement::setNoiselessRolloutCosts
+    PolicyImprovement::computeRolloutControlCosts
+      CovariantMovementPrimitive::computeControlCosts
+        line 275 is where we compute the 1/2 * theta * R * theta.T control cost term
+        Eigen::ArrayXXd Ax = (differentiation_matrices_[i] * params_all).array() *
+            derivative_costs_sqrt_[d].col(i).array();
+        costs_all += movement_dt_ * weight * (Ax * Ax).matrix();
+
+  total_cost is Q(theta)
+    we seem to not check for convergence, as we only keep
+    track of best parameters for lowest trajectory cost so far
+    over time
+
+there's a lot of metadata in a rollout data structure
+
+##################################################################
+
+rollouts are each of K noisy trajectories
+parameters are the control vectors theta/u
