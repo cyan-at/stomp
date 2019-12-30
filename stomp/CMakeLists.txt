@@ -22,21 +22,21 @@ catkin_package(
 
 add_library(stomp
   src/chomp.cpp
+  src/stomp_utils.cpp
   src/covariant_movement_primitive.cpp
   src/policy_improvement.cpp
   src/stomp.cpp
-  src/stomp_utils.cpp
 )
 
 add_executable(test_stomp2d
   test/stomp_2d_test.cpp
 )
-add_executable(test_cmp
-  test/test_cmp.cpp
-)
-add_executable(stomp_2d_00
-  test/stomp_2d_00.cpp
-)
+# add_executable(test_cmp
+#   test/test_cmp.cpp
+# )
+# add_executable(stomp_2d_00
+#   test/stomp_2d_00.cpp
+# )
 #add_executable(test_eigen_perf
 #  test/eigen_perf_test.cpp
 #)
@@ -44,23 +44,28 @@ add_executable(stomp_2d_00
 #  test/stomp_constrained_test.cpp
 #)
 
-add_executable(stomp_test_distributions
-  test/test_distributions.cpp
-  src/stomp_constrained.cpp
-)
+
 
 include_directories(include
   ${catkin_INCLUDE_DIRS}
   ${OpenMP_INCLUDE_DIRS}
   ${EIGEN3_INCLUDE_DIRS})
+
 add_definitions(${EIGEN3_DEFINITIONS} ${OpenMP_CXX_FLAGS})
 #add_definitions(-DEIGEN_NO_DEBUG -DNDEBUG)
 
 target_link_libraries(test_stomp2d stomp)
-target_link_libraries(test_cmp stomp)
-target_link_libraries(stomp_2d_00 stomp ${catkin_LIBRARIES} ${OpenMP_CXX_FLAGS})
+
+# target_link_libraries(test_cmp stomp)
+# target_link_libraries(stomp_2d_00 stomp ${catkin_LIBRARIES} ${OpenMP_CXX_FLAGS})
 
 target_link_libraries(stomp ${catkin_LIBRARIES} ${OpenMP_CXX_FLAGS})
+
 #target_link_libraries(test_eigen_perf ${Eigen_LIBRARIES} ${OpenMP_CXX_FLAGS})
 #target_link_libraries(stomp_constrained_test ${catkin_LIBRARIES} ${OpenMP_CXX_FLAGS})
-target_link_libraries(stomp_test_distributions ${catkin_LIBRARIES} ${OpenMP_CXX_FLAGS})
+
+# add_executable(stomp_test_distributions
+#   test/test_distributions.cpp
+#   src/stomp_constrained.cpp
+# )
+# target_link_libraries(stomp_test_distributions ${catkin_LIBRARIES} ${OpenMP_CXX_FLAGS})

@@ -4,13 +4,13 @@ large_scale: false
 num_time_steps: 100
 movement_duration: 1.0
 control_cost_weight: 0.0001
-output_dir: stomp_test
+output_dir: /home/ycharlie/Desktop/stomp_test_6
 use_chomp: false
 save_noisy_trajectories: true
 save_noiseless_trajectories: true
-publish_to_rviz: false
+publish_to_rviz: true
 delay_per_iteration: 0.04
-num_iterations: 500
+num_iterations: 100
 save_cost_function: true
 
 stomp:

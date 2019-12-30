@@ -237,7 +237,8 @@ Visualization Manager:
       Marker Topic: /test_stomp2d/visualization
       Name: Marker
       Namespaces:
-        {}
+        cost: true
+        trajectory: true
       Queue Size: 100
       Value: true
   Enabled: true
@@ -265,25 +266,25 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 6.33272362
+      Distance: 26.1101151
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.0599999987
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: 1.60154545
-        Y: 0.39594236
-        Z: -2.0937295
+        X: -20.2351055
+        Y: 9.47875595
+        Z: -5.04515886
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.0500000007
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.00999999978
-      Pitch: 0.779798329
+      Pitch: 0.239798784
       Target Frame: <Fixed Frame>
       Value: Orbit (rviz)
-      Yaw: 3.3267827
+      Yaw: 5.87179995
     Saved: ~
 Window Geometry:
   Displays:
