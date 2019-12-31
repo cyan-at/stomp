@@ -97,10 +97,10 @@ bool STOMP::initialize(
   policy_iteration_counter_ = 0;
 
   // initialize openmp
-  num_threads_ = omp_get_max_threads();
+  // num_threads_ = omp_get_max_threads();
   if (!use_openmp_) {
     num_threads_ = 1;
-    omp_set_num_threads(1);
+    // omp_set_num_threads(1);
   }
 
   // ROS_INFO("STOMP: using %d threads", num_threads_);
@@ -196,7 +196,7 @@ bool STOMP::doExecuteRollouts(int iteration_number) {
   std::vector<Eigen::VectorXd> gradients;
 #pragma omp parallel for num_threads(num_threads_)
   for (int r = 0; r < static_cast<int>(rollouts_.size()); ++r) {
-    int thread_id = omp_get_thread_num();
+    // int thread_id = omp_get_thread_num();
     // printf("thread_id = %d\n", thread_id);
     bool validity;
     STOMP_VERIFY(task_->execute(
@@ -207,7 +207,7 @@ bool STOMP::doExecuteRollouts(int iteration_number) {
       // projected_rollouts is not really used
       &tmp_rollout_cost_[r],
       &tmp_rollout_weighted_features_[r],
-      iteration_number, r, thread_id, false, gradients, validity));
+      iteration_number, r, 1, false, gradients, validity));
   }
   for (int r = 0; r < static_cast<int>(rollouts_.size()); ++r) {
     rollout_costs_.row(r) = tmp_rollout_cost_[r].transpose();

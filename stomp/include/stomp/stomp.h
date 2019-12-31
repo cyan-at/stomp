@@ -34,11 +34,11 @@
 
 /** \author Mrinal Kalakrishnan */
 
-#ifndef STOMP_POLICY_IMPROVEMENT_LOOP_H_
-#define STOMP_POLICY_IMPROVEMENT_LOOP_H_
+#ifndef STOMP_INCLUDE_STOMP_STOMP_H_
+#define STOMP_INCLUDE_STOMP_STOMP_H_
 
 #include <ros/ros.h>
-#include <rosbag/bag.h>
+
 #include <boost/shared_ptr.hpp>
 #include "std_msgs/Float64.h"
 
@@ -135,12 +135,14 @@ class STOMP {
 
     int policy_iteration_counter_;
     bool readPolicy(const int iteration_number);
-    bool writePolicy(const int iteration_number, bool is_rollout = false, int rollout_id = 0);
+    bool writePolicy(const int iteration_number,
+        bool is_rollout = false, int rollout_id = 0);
 
-    //bool writePolicyImprovementStatistics(const policy_improvement_loop::PolicyImprovementStatistics& stats_msg);
-
+    // bool writePolicyImprovementStatistics(
+    //     const policy_improvement_loop::PolicyImprovementStatistics&
+    //     stats_msg);
 };
 
-}
+}  // namespace stomp
 
-#endif /* POLICY_IMPROVEMENT_LOOP_H_ */
+#endif  // STOMP_INCLUDE_STOMP_STOMP_H_

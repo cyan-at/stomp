@@ -6,7 +6,7 @@ set(CMAKE_BUILD_TYPE RelWithDebInfo)
 #set(CMAKE_BUILD_TYPE Debug)
 
 find_package(catkin REQUIRED COMPONENTS roscpp)
-find_package(OpenMP REQUIRED)
+# find_package(OpenMP REQUIRED)
 
 find_package(Eigen3 REQUIRED)
 # find_package(PkgConfig)
@@ -48,10 +48,11 @@ add_executable(test_stomp2d
 
 include_directories(include
   ${catkin_INCLUDE_DIRS}
-  ${OpenMP_INCLUDE_DIRS}
+  # ${OpenMP_INCLUDE_DIRS}
   ${EIGEN3_INCLUDE_DIRS})
 
-add_definitions(${EIGEN3_DEFINITIONS} ${OpenMP_CXX_FLAGS})
+add_definitions(${EIGEN3_DEFINITIONS})
+# add_definitions(${OpenMP_CXX_FLAGS})
 #add_definitions(-DEIGEN_NO_DEBUG -DNDEBUG)
 
 target_link_libraries(test_stomp2d stomp)
@@ -59,7 +60,8 @@ target_link_libraries(test_stomp2d stomp)
 # target_link_libraries(test_cmp stomp)
 # target_link_libraries(stomp_2d_00 stomp ${catkin_LIBRARIES} ${OpenMP_CXX_FLAGS})
 
-target_link_libraries(stomp ${catkin_LIBRARIES} ${OpenMP_CXX_FLAGS})
+target_link_libraries(stomp ${catkin_LIBRARIES})
+# target_link_libraries(stomp ${OpenMP_CXX_FLAGS})
 
 #target_link_libraries(test_eigen_perf ${Eigen_LIBRARIES} ${OpenMP_CXX_FLAGS})
 #target_link_libraries(stomp_constrained_test ${catkin_LIBRARIES} ${OpenMP_CXX_FLAGS})

@@ -34,19 +34,19 @@
 
 /** \author Mrinal Kalakrishnan */
 
-#ifndef STOMP_COVARIANT_MOVEMENT_PRIMITIVE_H_
-#define STOMP_COVARIANT_MOVEMENT_PRIMITIVE_H_
+#ifndef STOMP_INCLUDE_STOMP_COVARIANT_MOVEMENT_PRIMITIVE_H_
+#define STOMP_INCLUDE_STOMP_COVARIANT_MOVEMENT_PRIMITIVE_H_
 
 #include <ros/ros.h>
 #include <Eigen/Core>
 #include <stomp/stomp_utils.h>
 
-namespace stomp
-{
+#include <vector>
 
-class CovariantMovementPrimitive
-{
-public:
+namespace stomp {
+
+class CovariantMovementPrimitive {
+ public:
     CovariantMovementPrimitive();
     virtual ~CovariantMovementPrimitive();
 
@@ -261,49 +261,49 @@ inline bool CovariantMovementPrimitive::setParametersAll(const std::vector<Eigen
   return true;
 }
 
-inline bool CovariantMovementPrimitive::getBasisFunctions(std::vector<Eigen::MatrixXd>& basis_functions)
-{
+inline bool CovariantMovementPrimitive::getBasisFunctions(
+    std::vector<Eigen::MatrixXd>& basis_functions) {
     basis_functions = basis_functions_;
     return true;
 }
 
-inline bool CovariantMovementPrimitive::getControlCosts(std::vector<Eigen::MatrixXd>& control_costs)
-{
+inline bool CovariantMovementPrimitive::getControlCosts(
+    std::vector<Eigen::MatrixXd>& control_costs) {
     control_costs = control_costs_;
     return true;
 }
 
-inline bool CovariantMovementPrimitive::getInvControlCosts(std::vector<Eigen::MatrixXd>& inv_control_costs)
-{
+inline bool CovariantMovementPrimitive::getInvControlCosts(
+    std::vector<Eigen::MatrixXd>& inv_control_costs) {
   inv_control_costs = inv_control_costs_;
   return true;
 }
 
-inline bool CovariantMovementPrimitive::getNumTimeSteps(int& num_time_steps)
-{
+inline bool CovariantMovementPrimitive::getNumTimeSteps(
+    int& num_time_steps) {
     num_time_steps = num_time_steps_;
     return true;
 }
 
-inline bool CovariantMovementPrimitive::getNumDimensions(int& num_dimensions)
-{
+inline bool CovariantMovementPrimitive::getNumDimensions(
+    int& num_dimensions) {
     num_dimensions = num_dimensions_;
     return true;
 }
 
-inline bool CovariantMovementPrimitive::getNumParameters(std::vector<int>& num_params)
-{
+inline bool CovariantMovementPrimitive::getNumParameters(
+    std::vector<int>& num_params) {
     num_params = num_parameters_;
     return true;
 }
 
-inline bool CovariantMovementPrimitive::setNumTimeSteps(const int num_time_steps)
-{
-    ROS_ASSERT_MSG(num_time_steps_ == num_time_steps, "%d != %d", num_time_steps_, num_time_steps);
+inline bool CovariantMovementPrimitive::setNumTimeSteps(
+    const int num_time_steps) {
+    ROS_ASSERT_MSG(num_time_steps_ == num_time_steps,
+        "%d != %d", num_time_steps_, num_time_steps);
     return true;
 }
 
+}  // namespace stomp
 
-}
-
-#endif /* STOMP_COVARIANT_MOVEMENT_PRIMITIVE_H_ */
+#endif  // STOMP_INCLUDE_STOMP_COVARIANT_MOVEMENT_PRIMITIVE_H_

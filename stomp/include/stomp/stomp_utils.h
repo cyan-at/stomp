@@ -41,6 +41,7 @@
 #include <kdl/jntarray.hpp>
 #include <iostream>
 #include <Eigen/Core>
+
 #include <ros/ros.h>
 #include <ros/assert.h>
 
@@ -80,21 +81,23 @@ static const double DIFF_RULES[NUM_DIFF_RULES][DIFF_RULE_LENGTH] = {
 //         1, -2,   1
 //  -1/2,  1,  0,  -1,  1/2
 
-enum CostComponents
-{
+enum CostComponents {
   STOMP_POSITION = 0,
   STOMP_VELOCITY = 1,
   STOMP_ACCELERATION = 2,
   STOMP_JERK = 3
 };
 
-void getDifferentiationMatrix(int num_time_steps, CostComponents order, double dt, Eigen::MatrixXd& diff_matrix);
-bool readDoubleArray(ros::NodeHandle& node_handle, const std::string& parameter_name, std::vector<double>& array, const bool verbose=true);
+void getDifferentiationMatrix(
+  int num_time_steps, CostComponents order, double dt, Eigen::MatrixXd& diff_matrix);
+bool readDoubleArray(
+  ros::NodeHandle& node_handle,
+  const std::string& parameter_name, std::vector<double>& array, const bool verbose=true);
 bool readStringArray(ros::NodeHandle& node_handle, const std::string& parameter_name, std::vector<std::string>& str_array, const bool verbose=true);
 bool getParam(XmlRpc::XmlRpcValue& config, const std::string& key, double& value);
 bool getParam(XmlRpc::XmlRpcValue& config, const std::string& key, std::vector<double>& double_array);
 bool getParam(XmlRpc::XmlRpcValue& config, const std::string& key, bool& value);
 
-} //namespace stomp
+}  // namespace stomp
 
 #endif /* STOMP_UTILS_H_ */
