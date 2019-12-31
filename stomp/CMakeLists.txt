@@ -44,8 +44,6 @@ add_executable(test_stomp2d
 #  test/stomp_constrained_test.cpp
 #)
 
-
-
 include_directories(include
   ${catkin_INCLUDE_DIRS}
   # ${OpenMP_INCLUDE_DIRS}
