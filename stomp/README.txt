@@ -15,3 +15,5 @@ rosrun stomp stomp_2d_test_plot.py
 
 The parameters for the 2D cost function and STOMP are in the stomp_2d_test.yaml
 file, feel free to experiment with those.
+
+rviz -d ./stomp_2d_test.rviz
