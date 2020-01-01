@@ -12,16 +12,22 @@ find_package(Eigen3 REQUIRED)
 # find_package(PkgConfig)
 # pkg_search_module(Eigen3 REQUIRED eigen3)
 
+find_package(yaml-cpp)
+
 catkin_package(
   INCLUDE_DIRS include
   LIBRARIES stomp
   CATKIN_DEPENDS roscpp
-  DEPENDS Eigen3
+  DEPENDS Eigen3 yaml-cpp
 )
 
+include_directories(
+  include
+  ${catkin_INCLUDE_DIRS}
+)
 
 add_library(stomp
-  src/chomp.cpp
+  # src/chomp.cpp
   src/stomp_utils.cpp
   src/covariant_movement_primitive.cpp
   src/policy_improvement.cpp
@@ -32,10 +38,16 @@ add_library(stomp
 # target_compile_definitions(stomp PRIVATE DEBUG_VERBOSE=1)
 target_compile_definitions(stomp PRIVATE DEBUG=1)
 
+target_link_libraries(stomp
+  ${catkin_LIBRARIES}
+  yaml-cpp
+)
+
+#################################################
+
 add_executable(test_stomp2d
   test/stomp_2d_test.cpp
 )
-
 
 # add_executable(test_cmp
 #   test/test_cmp.cpp

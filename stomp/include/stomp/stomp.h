@@ -45,6 +45,7 @@
 #include <stomp/covariant_movement_primitive.h>
 #include <stomp/task.h>
 #include <stomp/policy_improvement.h>
+#include <yaml-cpp/yaml.h>
 
 #include <vector>
 
@@ -59,7 +60,7 @@ class STOMP {
     //     ros::NodeHandle& node_handle, std::string& task_name);
 
     // task must already be initialized at this point.
-    bool initialize(const ros::NodeHandle& node_handle,
+    bool initialize(int num_dimensions, const ros::NodeHandle& node_handle,
         boost::shared_ptr<Task> task);
 
     bool runSingleIteration(int iteration_number);
@@ -144,5 +145,14 @@ class STOMP {
 };
 
 }  // namespace stomp
+
+namespace YAML {
+template <>
+struct convert<stomp::STOMP> {
+  static bool decode(const YAML::Node& node,
+    stomp::STOMP& s);  // NOLINT(runtime/references)
+};
+
+}  // namespace YAML
 
 #endif  // STOMP_INCLUDE_STOMP_STOMP_H_

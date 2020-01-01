@@ -10,8 +10,9 @@
 #define STOMP_TEST_STOMP_2D_TEST_H_
 
 #include <stomp/stomp.h>
-#include <stomp/chomp.h>
+// #include <stomp/chomp.h>
 #include <stomp/task.h>
+#include <yaml-cpp/yaml.h>
 
 #include <string>
 #include <vector>
@@ -30,7 +31,7 @@ class Stomp2DTest: public Task,
   public boost::enable_shared_from_this<Stomp2DTest> {
  public:
   Stomp2DTest():
-    node_handle_("~") {}
+    node_handle_("test_stomp2d") {}
 
   int run();
 
@@ -90,7 +91,7 @@ class Stomp2DTest: public Task,
 
  private:
   boost::shared_ptr<stomp::STOMP> stomp_;
-  boost::shared_ptr<stomp::CHOMP> chomp_;
+  // boost::shared_ptr<stomp::CHOMP> chomp_;
   boost::shared_ptr<stomp::CovariantMovementPrimitive> policy_;
   ros::NodeHandle node_handle_;
   ros::Publisher rviz_pub_;
@@ -143,5 +144,14 @@ class Stomp2DTest: public Task,
 };
 
 } /* namespace stomp */
+
+namespace YAML {
+template <>
+struct convert<stomp::Stomp2DTest> {
+  static bool decode(const YAML::Node& node,
+    stomp::Stomp2DTest& s);  // NOLINT(runtime/references)
+};
+
+}  // namespace YAML
 
 #endif  // STOMP_TEST_STOMP_2D_TEST_H_

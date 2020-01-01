@@ -55,7 +55,10 @@ STOMP::STOMP()
 STOMP::~STOMP() {}
 
 bool STOMP::initialize(
-  const ros::NodeHandle& node_handle, boost::shared_ptr<stomp::Task> task) {
+  int num_dimensions,
+  const ros::NodeHandle& node_handle,
+  boost::shared_ptr<stomp::Task> task) {
+  num_dimensions_ = num_dimensions;
   node_handle_ = node_handle;
 
   trajectory_cost_pub_ =
@@ -76,6 +79,8 @@ bool STOMP::initialize(
   STOMP_VERIFY(task_->getPolicy(policy_));
   STOMP_VERIFY(policy_->getNumTimeSteps(num_time_steps_));
   control_cost_weight_ = task_->getControlCostWeight();
+
+  printf("NEW YEAR %d vs %d\n", num_dimensions_, static_cast<int>(noise_decay_.size()));
 
   STOMP_VERIFY(policy_->getNumDimensions(num_dimensions_));
   ROS_ASSERT(num_dimensions_ == static_cast<int>(noise_decay_.size()));
@@ -117,17 +122,29 @@ bool STOMP::initialize(
 }
 
 bool STOMP::readParameters() {
+  YAML::Node config = YAML::LoadFile(
+    "/home/jim/Dev/jim/stomp/stomp/test/stomp_2d_test.yaml");
+
+  if (config["stomp"]["min_rollouts"]) {
+    min_rollouts_ = config["stomp"]["min_rollouts"].as<int>();
+    std::cout << "min rollouts found!!! " << min_rollouts_ << "\n";
+  }
   STOMP_VERIFY(node_handle_.getParam(
     "min_rollouts",
     min_rollouts_));
+
   STOMP_VERIFY(node_handle_.getParam(
     "max_rollouts",
     max_rollouts_));
   STOMP_VERIFY(node_handle_.getParam(
     "num_rollouts_per_iteration",
     num_rollouts_per_iteration_));
-  STOMP_VERIFY(readDoubleArray(node_handle_, "noise_stddev", noise_stddev_));
-  STOMP_VERIFY(readDoubleArray(node_handle_, "noise_decay", noise_decay_));
+  STOMP_VERIFY(readDoubleArray(node_handle_,
+    "noise_stddev",
+    noise_stddev_));
+  STOMP_VERIFY(readDoubleArray(node_handle_,
+    "noise_decay",
+    noise_decay_));
   STOMP_VERIFY(readDoubleArray(
     node_handle_,
     "noise_min_stddev",
@@ -275,7 +292,7 @@ bool STOMP::doNoiselessRollout(int iteration_number) {
     tmp_rollout_cost_[0], total_cost);
 
   #ifdef DEBUG
-  ROS_INFO("Noiseless cost = %lf", total_cost);
+  ROS_INFO("Noiseless cost @ iteration %d = %lf", iteration_number, total_cost);
   #endif
 
   if (total_cost < best_noiseless_cost_) {
@@ -367,3 +384,22 @@ void STOMP::resetAdaptiveNoise() {
 }
 
 }  // namespace stomp
+
+namespace YAML {
+
+using stomp::yaml::Convert;
+using stomp::yaml::ConvertSequence;
+
+bool convert<stomp::STOMP>::decode(
+  const YAML::Node& node,
+  stomp::STOMP& s) {  // NOLINT(runtime/references)
+  if (node["stomp"] == NULL) {
+    throw stomp::ExceptionYaml(
+      "stomp::STOMP requires stomp component");
+  }
+
+  // std::string temp = Convert<std::string>(node, "serial_port_dev");
+  return true;
+}
+
+}  // namespace YAML

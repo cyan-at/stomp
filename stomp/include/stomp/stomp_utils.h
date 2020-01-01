@@ -42,8 +42,13 @@
 #include <iostream>
 #include <Eigen/Core>
 
+#include <stdexcept>
+#include <string>
+
 #include <ros/ros.h>
 #include <ros/assert.h>
+
+#include <yaml-cpp/yaml.h>
 
 #ifdef ROS_ASSERT_ENABLED
 
@@ -60,9 +65,7 @@
 
 #endif
 
-
-namespace stomp
-{
+namespace stomp {
 
 static const int DIFF_RULE_LENGTH = 7;
 static const int TRAJECTORY_PADDING = DIFF_RULE_LENGTH - 1;
@@ -97,6 +100,61 @@ bool readStringArray(ros::NodeHandle& node_handle, const std::string& parameter_
 bool getParam(XmlRpc::XmlRpcValue& config, const std::string& key, double& value);
 bool getParam(XmlRpc::XmlRpcValue& config, const std::string& key, std::vector<double>& double_array);
 bool getParam(XmlRpc::XmlRpcValue& config, const std::string& key, bool& value);
+
+class ExceptionYaml : public std::runtime_error {
+ public:
+  explicit ExceptionYaml(const std::string& msg) : std::runtime_error(msg) {}
+
+  ~ExceptionYaml() throw() {}
+};
+
+namespace yaml {
+
+YAML::Node LoadFile(const std::string& filename);
+YAML::Node Load(const std::string& str);
+
+template <typename T>
+T Convert(YAML::Node node, std::string key) {
+  if (!node[key]) {
+    // throw ExceptionYaml(primitives::stringsprintf(
+    //     "\nYAML parsing failure: key '%s' is missing.", key.c_str()));
+    throw ExceptionYaml(
+      std::string("\nYAML parsing failure: missing key: ") + key);
+  }
+  try {
+    return node[key].as<T>();
+  } catch (YAML::Exception& e) {
+    throw ExceptionYaml(
+      std::string("Problem parsing field ") + key + std::string("\n") +
+      e.what());
+  }
+}
+
+template <typename T>
+T ConvertSequence(YAML::Node node, std::string key, size_t size) {
+  if (!node[key]) {
+    throw ExceptionYaml(std::string("\nYAML parsing failure: key '") + key +
+                        "' is missing.");
+  }
+  YAML::Node nn = node[key];
+  if (!nn.IsSequence()) {
+    throw ExceptionYaml(std::string("\nYAML parsing failure: key '") + key +
+                        "' is not a sequence.");
+  }
+  if (nn.size() != size) {
+    throw ExceptionYaml(std::string("\nYAML parsing failure: key '") + key +
+      "' size is " + std::to_string(nn.size()) + ", must be size " +
+      std::to_string(size) + ".");
+  }
+  try {
+    return nn.as<T>();
+  } catch (YAML::Exception& e) {
+    throw ExceptionYaml(
+      std::string("\nProblem parsing field ") + key + e.what());
+  }
+}
+
+}  // namespace yaml
 
 }  // namespace stomp
 

@@ -85,11 +85,11 @@ int Stomp2DTest::run() {
 
   ros::NodeHandle stomp_node_handle(node_handle_, "stomp");
   stomp_.reset(new stomp::STOMP());
-  stomp_->initialize(stomp_node_handle, shared_from_this());
+  stomp_->initialize(num_dimensions_, stomp_node_handle, shared_from_this());
 
-  ros::NodeHandle chomp_node_handle(node_handle_, "chomp");
-  chomp_.reset(new stomp::CHOMP());
-  chomp_->initialize(chomp_node_handle, shared_from_this());
+  // ros::NodeHandle chomp_node_handle(node_handle_, "chomp");
+  // chomp_.reset(new stomp::CHOMP());
+  // chomp_->initialize(chomp_node_handle, shared_from_this());
 
   if (save_noiseless_trajectories_) {
     std::stringstream sss;
@@ -105,14 +105,14 @@ int Stomp2DTest::run() {
     std::vector<Rollout> rollouts;
     Rollout noiseless_rollout;
     if (use_chomp_) {
-      chomp_->runSingleIteration(i);
-      chomp_->getNoiselessRollout(noiseless_rollout);
-      if (save_noiseless_trajectories_) {
-        for (unsigned int d = 0; d < num_dimensions_; ++d) {
-          fprintf(stddev_file, "%f\t", 0.0);
-        }
-        fprintf(stddev_file, "\n");
-      }
+      // chomp_->runSingleIteration(i);
+      // chomp_->getNoiselessRollout(noiseless_rollout);
+      // if (save_noiseless_trajectories_) {
+      //   for (unsigned int d = 0; d < num_dimensions_; ++d) {
+      //     fprintf(stddev_file, "%f\t", 0.0);
+      //   }
+      //   fprintf(stddev_file, "\n");
+      // }
     } else {
       // printf("running single iteration\n");
       stomp_->runSingleIteration(i);
@@ -174,7 +174,7 @@ int Stomp2DTest::run() {
     fclose(num_rollouts_file);
 
   stomp_.reset();
-  chomp_.reset();
+  // chomp_.reset();
   policy_.reset();
 
   return 0;
@@ -204,6 +204,9 @@ void Stomp2DTest::writeCostFunction() {
 }
 
 void Stomp2DTest::readParameters() {
+  YAML::Node config = YAML::LoadFile(
+    "/home/jim/Dev/jim/stomp/stomp/test/stomp_2d_test.yaml");
+
   // WARNING, TODO: no error checking here!!!
   obstacles_.clear();
   XmlRpc::XmlRpcValue obstacles_xml;
@@ -217,6 +220,11 @@ void Stomp2DTest::readParameters() {
   }
 
   STOMP_VERIFY(node_handle_.getParam("num_iterations", num_iterations_));
+  if (config["num_iterations"]) {
+    num_iterations_ = config["num_iterations"].as<int>();
+    std::cout << "num_iterations found!!! " << num_iterations_ << "\n";
+  }
+
   STOMP_VERIFY(node_handle_.getParam("num_time_steps", num_time_steps_));
   STOMP_VERIFY(node_handle_.getParam("movement_duration", movement_duration_));
   STOMP_VERIFY(node_handle_.getParam(
@@ -605,206 +613,42 @@ void Stomp2DTest::visualizeTrajectory(
 
 } /* namespace stomp */
 
+namespace YAML {
+
+using stomp::yaml::Convert;
+using stomp::yaml::ConvertSequence;
+
+bool convert<stomp::Stomp2DTest>::decode(
+  const YAML::Node& node,
+  stomp::Stomp2DTest& s) {  // NOLINT(runtime/references)
+  if (node["stomp"] == NULL) {
+    throw stomp::ExceptionYaml(
+      "stomp::Stomp2DTest requires stomp component");
+  }
+
+  // std::string temp = Convert<std::string>(node, "serial_port_dev");
+  return true;
+}
+
+}  // namespace YAML
+
+// ##################################################################
+
 int main(int argc, char ** argv) {
   ros::init(argc, argv, "test_stomp2d");
 
-  // check if we want to do large-scale testing
-  ros::NodeHandle node_handle("~");
-  bool large_scale = false;
-  node_handle.getParam("large_scale", large_scale);
-  if (!large_scale) {
-    boost::shared_ptr<stomp::Stomp2DTest> test(
-      new stomp::Stomp2DTest());
-    return test->run();
-  }
+  YAML::Node n = YAML::LoadFile(
+    "/home/jim/Dev/jim/stomp/stomp/test/stomp_2d_test.yaml");
+  stomp::Stomp2DTest test = n.as<stomp::Stomp2DTest>();
 
-  // read params for large scale testing
-  int num_dimensions = 2;
-  int stomp_repetitions;
-  std::string large_scale_output_dir;
-  std::string output_dir;
-  std::vector<int> stomp_rollouts;
-  std::vector<double> stomp_rollouts_dbl;
-  std::vector<double> stomp_noises;
-  std::vector<double> chomp_learning_rates;
-  std::vector<std::string> cost_function_names;
-  std::vector<bool> stomp_use_noise_adaptation_or_not;
-  std::vector<bool> cost_function_bool_or_not;
+  // // check if we want to do large-scale testing
+  // ros::NodeHandle node_handle("~");
+  // bool large_scale = false;
+  // node_handle.getParam("large_scale", large_scale);
 
-  STOMP_VERIFY(
-    node_handle.getParam("large_scale_output_dir", large_scale_output_dir));
-  mkdir(large_scale_output_dir.c_str(), 0755);
-  STOMP_VERIFY(node_handle.getParam("output_dir", output_dir));
-  STOMP_VERIFY(node_handle.getParam("stomp_repetitions", stomp_repetitions));
-  STOMP_VERIFY(
-    stomp::readDoubleArray(node_handle, "stomp_rollouts", stomp_rollouts_dbl));
-  // convert dbls to int
-  for (unsigned int i = 0; i < stomp_rollouts_dbl.size(); ++i)
-    stomp_rollouts.push_back(lrint(stomp_rollouts_dbl[i]));
-  STOMP_VERIFY(stomp::readDoubleArray(
-    node_handle, "stomp_noises", stomp_noises));
-  STOMP_VERIFY(stomp::readDoubleArray(
-    node_handle, "chomp_learning_rates", chomp_learning_rates));
-  STOMP_VERIFY(stomp::readStringArray(
-    node_handle, "cost_function_names", cost_function_names));
+  // boost::shared_ptr<stomp::Stomp2DTest> test(
+  //   new stomp::Stomp2DTest());
+  // return test->run();
 
-  std::vector<double> tmp_dbl;
-  STOMP_VERIFY(stomp::readDoubleArray(
-    node_handle, "stomp_noise_adaptations", tmp_dbl));
-  for (unsigned int i = 0; i < tmp_dbl.size(); ++i) {
-    bool val = (tmp_dbl[i] <= 0.0)? false: true;
-    stomp_use_noise_adaptation_or_not.push_back(val);
-  }
-
-  tmp_dbl.clear();
-  STOMP_VERIFY(stomp::readDoubleArray(
-    node_handle, "cost_function_bools", tmp_dbl));
-  for (unsigned int i = 0; i < tmp_dbl.size(); ++i) {
-    bool val = (tmp_dbl[i] <= 0.0)? false: true;
-    cost_function_bool_or_not.push_back(val);
-  }
-
-  // read all cost functions:
-  std::vector<XmlRpc::XmlRpcValue> cost_functions;
-  XmlRpc::XmlRpcValue cfs_xml;
-  node_handle.getParam("cost_functions", cfs_xml);
-  for (unsigned int i = 0; i < cost_function_names.size(); ++i) {
-    XmlRpc::XmlRpcValue cf_xml = cfs_xml[cost_function_names[i]];
-    cost_functions.push_back(cf_xml);
-  }
-
-  // compute total number of runs
-  int num_stomp_runs = stomp_repetitions *
-      stomp_rollouts.size() *
-      stomp_noises.size() *
-      stomp_use_noise_adaptation_or_not.size() *
-      cost_function_names.size() *
-      cost_function_bool_or_not.size();
-  int num_chomp_runs = chomp_learning_rates.size()
-    * cost_function_names.size() * cost_function_bool_or_not.size();
-  ROS_INFO("Expected number of STOMP runs: %d", num_stomp_runs);
-  ROS_INFO("Expected number of CHOMP runs: %d", num_chomp_runs);
-
-  int run_index = 0;
-
-  // disgusting nested loops
-  for (unsigned int cf_index = 0;
-    cf_index < cost_function_names.size(); ++cf_index) {
-    for (unsigned int cb_index = 0;
-      cb_index < cost_function_bool_or_not.size(); ++cb_index) {
-      // convert cost function to bool or not
-      for (int i = 0; i < cost_functions[cf_index].size(); ++i) {
-        cost_functions[cf_index][i]["boolean"] = XmlRpc::XmlRpcValue(
-          cost_function_bool_or_not[cb_index] ? true : false);
-      }
-      // put the cost function on param server
-      node_handle.setParam("cost_function", cost_functions[cf_index]);
-
-      // first set stomp mode
-      node_handle.setParam("use_chomp", false);
-
-      for (unsigned int sr_index = 0;
-        sr_index < stomp_rollouts.size(); ++sr_index) {
-        // set number of rollouts on param server
-        node_handle.setParam("stomp/max_rollouts", stomp_rollouts[sr_index]);
-        node_handle.setParam("stomp/min_rollouts", stomp_rollouts[sr_index]);
-        node_handle.setParam("stomp/num_rollouts_per_iteration",
-          stomp_rollouts[sr_index]);
-
-        for (unsigned int sn_index = 0;
-          sn_index < stomp_noises.size(); ++sn_index) {
-          // set noise on param server
-          XmlRpc::XmlRpcValue noise_array;
-          node_handle.getParam("stomp/noise_stddev", noise_array);
-          for (int i = 0; i < num_dimensions; ++i) {
-            noise_array[i] = stomp_noises[sn_index];
-          }
-          node_handle.setParam("stomp/noise_stddev", noise_array);
-
-          for (unsigned int su_index = 0;
-            su_index < stomp_use_noise_adaptation_or_not.size(); ++su_index) {
-            // set stomp/use_noise_adaptation on param server
-            node_handle.setParam("stomp/use_noise_adaptation",
-              stomp_use_noise_adaptation_or_not[su_index]);
-
-            for (int srep = 0; srep < stomp_repetitions; ++srep) {
-              // create test name
-              std::stringstream test_name;
-              if (cost_function_bool_or_not[cb_index])
-                test_name << "bool_";
-              test_name << cost_function_names[cf_index];
-              test_name << "_stomp_";
-              test_name << "r" << stomp_rollouts[sr_index];
-              test_name << "_n" << stomp_noises[sn_index];
-              test_name << (stomp_use_noise_adaptation_or_not[
-                su_index] ? "_na" : "_nona");
-              test_name << "_t" << srep;
-
-              ++run_index;
-
-              ROS_INFO_STREAM(
-                test_name.str() << " (" <<
-                run_index << "/" << num_stomp_runs+num_chomp_runs << ")");
-
-              // run the test
-              boost::shared_ptr<stomp::Stomp2DTest> test(
-                new stomp::Stomp2DTest());
-              test->run();
-
-              std::stringstream copy_command;
-              copy_command << "mv " << output_dir
-                << " " << large_scale_output_dir << "/" << test_name.str();
-              if (system(copy_command.str().c_str())) {
-                ROS_ERROR("System command failed: %s",
-                  copy_command.str().c_str());
-                return false;
-              }
-              // ROS_INFO_STREAM(copy_command.str());
-              if (!node_handle.ok())
-                return false;
-            }  // srep
-          }  // su_index
-        }  // sn_index
-      }  // sr_index
-
-      // now do chomp mode
-      node_handle.setParam("use_chomp", true);
-      for (unsigned int cl_index=0;
-        cl_index < chomp_learning_rates.size(); ++cl_index) {
-        // set learning rate on param server
-        node_handle.setParam("chomp/learning_rate",
-          chomp_learning_rates[cl_index]);
-
-        // create test name
-        std::stringstream test_name;
-        if (cost_function_bool_or_not[cb_index])
-          test_name << "bool_";
-        test_name << cost_function_names[cf_index];
-        test_name << "_chomp_";
-        test_name << "r" << chomp_learning_rates[cl_index];
-
-        ++run_index;
-
-        ROS_INFO_STREAM(
-          test_name.str() << " (" <<
-          run_index << "/" << num_stomp_runs+num_chomp_runs << ")");
-
-        // run the test
-        boost::shared_ptr<stomp::Stomp2DTest> test(new stomp::Stomp2DTest());
-        test->run();
-        test.reset();
-
-        std::stringstream copy_command;
-        copy_command << "mv " <<
-          output_dir << " " << large_scale_output_dir << "/" << test_name.str();
-        if (system(copy_command.str().c_str())) {
-          ROS_ERROR("System command failed: %s", copy_command.str().c_str());
-          return false;
-        }
-        // ROS_INFO_STREAM(copy_command.str());
-        if (!node_handle.ok())
-          return false;
-      }
-    }
-  }
+  return 0;
 }
