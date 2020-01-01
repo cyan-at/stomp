@@ -14,8 +14,6 @@ delay_per_iteration: 0.04
 num_iterations: 10
 save_cost_function: true
 
-num_dimensions: 6
-
 stomp:
   # set the three parameters below to the same value for normal operation
   max_rollouts: 50
@@ -35,11 +33,11 @@ chomp:
   learning_rate: 10.0
   max_update: 1000.0
 
-starting_point: [0.2, 0.2] # dimension 0 = [0], 1 = [1]
-ending_point: [0.9, 0.1]
+starting_point: [0.2, 0.2, 0.0, 0.0, 0.0, 0.0]
+ending_point: [0.9, 0.1, 0.0, 0.0, 0.0, 0.0]
 
 # cost function defintion. Each element defines an elliptical obstacle.
-cost_function:
+obstacles:
     -
       center: [0.3, 0.0]
       radius: [0.1, 0.7]

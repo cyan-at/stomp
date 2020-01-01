@@ -27,7 +27,7 @@ int Stomp2DTest::run() {
     "visualization", 100, false);
   srand(time(NULL));
   resolution_ = 0.002;
-  readParameters();
+  // readParameters();
   mkdir(output_dir_.c_str(), 0755);
 
   std::stringstream stddev_filename, cost_filename;
@@ -212,18 +212,18 @@ void Stomp2DTest::readParameters() {
   XmlRpc::XmlRpcValue obstacles_xml;
   STOMP_VERIFY(node_handle_.getParam("cost_function", obstacles_xml));
   for (int i = 0; i < obstacles_xml.size(); ++i) {
-    Obstacle2D o;
+    Obstacle o;
     STOMP_VERIFY(getParam(obstacles_xml[i], "center", o.center_));
     STOMP_VERIFY(getParam(obstacles_xml[i], "radius", o.radius_));
     STOMP_VERIFY(getParam(obstacles_xml[i], "boolean", o.boolean_));
     obstacles_.push_back(o);
   }
 
-  STOMP_VERIFY(node_handle_.getParam("num_iterations", num_iterations_));
-  if (config["num_iterations"]) {
-    num_iterations_ = config["num_iterations"].as<int>();
-    std::cout << "num_iterations found!!! " << num_iterations_ << "\n";
-  }
+  // STOMP_VERIFY(node_handle_.getParam("num_iterations", num_iterations_));
+  // if (config["num_iterations"]) {
+  //   num_iterations_ = config["num_iterations"].as<int>();
+  //   std::cout << "num_iterations found!!! " << num_iterations_ << "\n";
+  // }
 
   STOMP_VERIFY(node_handle_.getParam("num_time_steps", num_time_steps_));
   STOMP_VERIFY(node_handle_.getParam("movement_duration", movement_duration_));
@@ -618,6 +618,30 @@ namespace YAML {
 using stomp::yaml::Convert;
 using stomp::yaml::ConvertSequence;
 
+bool convert<stomp::Obstacle>::decode(
+  const YAML::Node& node,
+  stomp::Obstacle& o) {  // NOLINT(runtime/references)
+  if (node["center"] == NULL) {
+    throw stomp::ExceptionYaml(
+      "stomp::Obstacle requires center component");
+  }
+  o.center_ = node["center"].as<std::vector<double>>();
+
+  if (node["radius"] == NULL) {
+    throw stomp::ExceptionYaml(
+      "stomp::Obstacle requires radius component");
+  }
+  o.radius_ = node["radius"].as<std::vector<double>>();
+
+  if (node["boolean"] == NULL) {
+    throw stomp::ExceptionYaml(
+      "stomp::Obstacle requires boolean component");
+  }
+  o.boolean_ = node["boolean"].as<bool>();
+
+  return true;
+}
+
 bool convert<stomp::Stomp2DTest>::decode(
   const YAML::Node& node,
   stomp::Stomp2DTest& s) {  // NOLINT(runtime/references)
@@ -631,6 +655,108 @@ bool convert<stomp::Stomp2DTest>::decode(
       "stomp::Stomp2DTest requires num_iterations component");
   }
   s.num_iterations_ = node["num_iterations"].as<int>();
+
+  if (node["num_time_steps"] == NULL) {
+    throw stomp::ExceptionYaml(
+      "stomp::Stomp2DTest requires num_time_steps component");
+  }
+  s.num_time_steps_ = node["num_time_steps"].as<int>();
+
+  if (node["movement_duration"] == NULL) {
+    throw stomp::ExceptionYaml(
+      "stomp::Stomp2DTest requires movement_duration component");
+  }
+  s.movement_duration_ = node["movement_duration"].as<double>();
+
+  if (node["control_cost_weight"] == NULL) {
+    throw stomp::ExceptionYaml(
+      "stomp::Stomp2DTest requires control_cost_weight component");
+  }
+  s.control_cost_weight_ = node["control_cost_weight"].as<double>();
+
+  if (node["output_dir"] == NULL) {
+    throw stomp::ExceptionYaml(
+      "stomp::Stomp2DTest requires output_dir component");
+  }
+  s.output_dir_ = node["output_dir"].as<std::string>();
+
+  if (node["use_chomp"] == NULL) {
+    throw stomp::ExceptionYaml(
+      "stomp::Stomp2DTest requires use_chomp component");
+  }
+  s.use_chomp_ = node["use_chomp"].as<bool>();
+
+  if (node["save_noisy_trajectories"] == NULL) {
+    throw stomp::ExceptionYaml(
+      "stomp::Stomp2DTest requires save_noisy_trajectories component");
+  }
+  s.save_noisy_trajectories_ = node["save_noisy_trajectories"].as<bool>();
+
+  if (node["save_noiseless_trajectories"] == NULL) {
+    throw stomp::ExceptionYaml(
+      "stomp::Stomp2DTest requires save_noiseless_trajectories component");
+  }
+  s.save_noiseless_trajectories_ = node["save_noiseless_trajectories"].as<bool>();
+
+  if (node["save_cost_function"] == NULL) {
+    throw stomp::ExceptionYaml(
+      "stomp::Stomp2DTest requires save_cost_function component");
+  }
+  s.save_cost_function_ = node["save_cost_function"].as<bool>();
+
+  if (node["publish_to_rviz"] == NULL) {
+    throw stomp::ExceptionYaml(
+      "stomp::Stomp2DTest requires publish_to_rviz component");
+  }
+  s.publish_to_rviz_ = node["publish_to_rviz"].as<bool>();
+
+  if (node["delay_per_iteration"] == NULL) {
+    throw stomp::ExceptionYaml(
+      "stomp::Stomp2DTest requires delay_per_iteration component");
+  }
+  s.delay_per_iteration_ = node["delay_per_iteration"].as<double>();
+
+  if (node["starting_point"] == NULL) {
+    throw stomp::ExceptionYaml(
+      "stomp::Stomp2DTest requires starting_point component");
+  }
+  s.starting_point_ = node["starting_point"].as<std::vector<double>>();
+  if (node["ending_point"] == NULL) {
+    throw stomp::ExceptionYaml(
+      "stomp::Stomp2DTest requires ending_point component");
+  }
+  s.ending_point_ = node["ending_point"].as<std::vector<double>>();
+
+  if (s.starting_point_.size() == 0 || s.ending_point_.size() == 0) {
+    throw stomp::ExceptionYaml(
+      "stomp::Stomp2DTest found starting_point or ending_point empty");
+  }
+  if (s.starting_point_.size() != s.ending_point_.size()) {
+    throw stomp::ExceptionYaml(
+      "stomp::Stomp2DTest found mismatch of starting_point, ending_point size");
+  }
+  // if (node["num_dimensions"] == NULL) {
+  //   throw stomp::ExceptionYaml(
+  //     "stomp::Stomp2DTest requires num_dimensions component");
+  // }
+  // s.num_dimensions_ = node["num_dimensions"].as<int>();
+  // 2019-12-31 TODO(jim) consolidate starting(ending)_point / num_dimensions
+  // to infer num_dimensions_ from size of starting_point etc.
+  s.num_dimensions_ = s.starting_point_.size();
+
+  if (node["obstacles"] == NULL) {
+    throw stomp::ExceptionYaml(
+      "stomp::Stomp2DTest requires obstacles component");
+  }
+  if (!node["obstacles"].IsSequence()) {
+    throw stomp::ExceptionYaml(
+      "stomp::Stomp2DTest requires obstacles sequence");
+  }
+  s.obstacles_.clear();
+  for (unsigned int i = 0; i < node["obstacles"].size(); i++) {
+    s.obstacles_.push_back(
+      node["obstacles"][i].as<stomp::Obstacle>());
+  }
 
   return true;
 }

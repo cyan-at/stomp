@@ -9,7 +9,7 @@
 #include <string>
 #include <vector>
 
-struct Obstacle2D {
+struct Obstacle {
   std::vector<double> center_;
   std::vector<double> radius_;
   bool boolean_;

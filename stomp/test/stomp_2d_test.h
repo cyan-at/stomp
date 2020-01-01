@@ -21,10 +21,13 @@
 
 namespace stomp {
 
-struct Obstacle2D {
+class Obstacle {
+ public:
   std::vector<double> center_;
   std::vector<double> radius_;
   bool boolean_;
+
+  Obstacle() {}
 };
 
 class Stomp2DTest: public Task,
@@ -112,7 +115,7 @@ class Stomp2DTest: public Task,
   double delay_per_iteration_;
   double cost_viz_scaling_const_;
   double cost_viz_scaling_factor_;
-  std::vector<Obstacle2D> obstacles_;
+  std::vector<Obstacle> obstacles_;
 
   Eigen::MatrixXd vel_diff_matrix_;
   Eigen::MatrixXd acc_diff_matrix_;
@@ -143,9 +146,16 @@ class Stomp2DTest: public Task,
     double ax, double ay, double& gx, double& gy) const;
 };
 
-} /* namespace stomp */
+}  // namespace stomp
 
 namespace YAML {
+
+template <>
+struct convert<stomp::Obstacle> {
+  static bool decode(const YAML::Node& node,
+    stomp::Obstacle& o);  // NOLINT(runtime/references)
+};
+
 template <>
 struct convert<stomp::Stomp2DTest> {
   static bool decode(const YAML::Node& node,
