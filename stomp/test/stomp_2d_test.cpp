@@ -22,6 +22,14 @@
 namespace stomp {
 
 int Stomp2DTest::run() {
+  stomp::DHJoint ur10_params;
+  ur10_params.d1 = 0.1273;
+  ur10_params.d4 = 0.163941;
+  ur10_params.d5 = 0.1157;
+  ur10_params.d6 = 0.0922;
+  ur10_params.a2 = -0.612;
+  ur10_params.a3 = -0.5723;
+
   // initialize rviz publisher
   rviz_pub_ = node_handle_.advertise<visualization_msgs::Marker>(
     "visualization", 100, false);

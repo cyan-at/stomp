@@ -1,0 +1,37 @@
+    def get_fast_a_matrix(self, theta):
+        sth_ = math.sin(theta)
+        cth_ = math.cos(theta)
+
+        self.fast_a_matrix[0, 0] = cth_
+        self.fast_a_matrix[0, 1] = -sth_ * self.calpha_
+
+        self.fast_a_matrix[0, 2] = sth_ * self.salpha_
+        self.fast_a_matrix[0, 3] = self.r * cth_
+
+        self.fast_a_matrix[1, 0] = sth_
+        self.fast_a_matrix[1, 1] = cth_ * self.calpha_
+
+        self.fast_a_matrix[1, 2] = -cth_ * self.salpha_
+        self.fast_a_matrix[1, 3] = self.r * sth_
+
+        self.fast_a_matrix[2, 1] = self.salpha_
+        self.fast_a_matrix[2, 2] = self.calpha_
+        self.fast_a_matrix[2, 3] = self.d
+        return self.fast_a_matrix
+
+vs
+
+void JointRot::CalcFK(void) {
+  th_ = q()(0);
+
+  sth_ = sin(th_);
+  cth_ = cos(th_);
+
+  g_joint_link_(0, 0) = cth_;
+  g_joint_link_(0, 1) = -sth_;
+  g_joint_link_(1, 0) = sth_;
+  g_joint_link_(1, 1) = cth_;
+}
+
+
+event dispatch, and the idea of a thing having instructions of how to use it as well as what happens next, is like a kind of advanced memento design pattern. the memento is what is passed around, and the memento induces how it is consumed as well as what to memento next. some more interesting relationship there

@@ -14,6 +14,15 @@ delay_per_iteration: 0.04
 num_iterations: 10
 save_cost_function: true
 
+ur:
+  dh_params:
+    d1: 0.1273
+    d4: 0.163941
+    d5: 0.1157
+    d6: 0.0922
+    a2: -0.612
+    a3: -0.5723
+
 stomp:
   # set the three parameters below to the same value for normal operation
   max_rollouts: 50

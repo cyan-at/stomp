@@ -10,6 +10,7 @@
 #define STOMP_TEST_STOMP_2D_TEST_H_
 
 #include <stomp/stomp.h>
+#include <stomp/ur_kin.h>
 // #include <stomp/chomp.h>
 #include <stomp/task.h>
 #include <yaml-cpp/yaml.h>

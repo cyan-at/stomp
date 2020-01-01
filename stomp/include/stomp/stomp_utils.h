@@ -163,6 +163,8 @@ T ConvertSequence(YAML::Node node, std::string key, size_t size) {
 
 }  // namespace yaml
 
+typedef Eigen::Matrix4d Hom;
+
 }  // namespace stomp
 
 #endif /* STOMP_UTILS_H_ */
