@@ -84,7 +84,11 @@ int Stomp2DTest::run() {
     visualizeCostFunction();
 
   ros::NodeHandle stomp_node_handle(node_handle_, "stomp");
-  stomp_.reset(new stomp::STOMP());
+
+  // stomp_.reset(new stomp::STOMP());
+  boost::shared_ptr<stomp::STOMP> stomp_boost_sharedptr(&stomp,
+      &stomp::null_deleter<stomp::STOMP>);
+  stomp_ = stomp_boost_sharedptr;
   stomp_->initialize(num_dimensions_,
     stomp_node_handle, shared_from_this());
 
@@ -745,6 +749,7 @@ bool convert<stomp::Stomp2DTest>::decode(
   // to infer num_dimensions_ from size of starting_point etc.
   s.num_dimensions_ = s.starting_point_.size();
 
+  /* load obstacles */
   if (node["obstacles"] == NULL) {
     throw stomp::ExceptionYaml(
       "stomp::Stomp2DTest requires obstacles component");
@@ -759,6 +764,12 @@ bool convert<stomp::Stomp2DTest>::decode(
       node["obstacles"][i].as<stomp::Obstacle>());
   }
 
+  /* load stomp object */
+  if (node["stomp"] == NULL) {
+    throw stomp::ExceptionYaml(
+      "stomp::Stomp2DTest requires stomp component");
+  }
+  s.stomp = node["stomp"].as<stomp::STOMP>();
   return true;
 }
 

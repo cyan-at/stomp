@@ -73,7 +73,7 @@ bool STOMP::initialize(
       std_msgs::Float64>(
         "best_stomp_trajectory_cost", 1);
 
-  STOMP_VERIFY(readParameters());
+  // STOMP_VERIFY(readParameters());
 
   task_ = task;
   STOMP_VERIFY(task_->getPolicy(policy_));
@@ -136,6 +136,7 @@ bool STOMP::readParameters() {
   STOMP_VERIFY(node_handle_.getParam(
     "max_rollouts",
     max_rollouts_));
+
   STOMP_VERIFY(node_handle_.getParam(
     "num_rollouts_per_iteration",
     num_rollouts_per_iteration_));
@@ -393,12 +394,60 @@ using stomp::yaml::ConvertSequence;
 bool convert<stomp::STOMP>::decode(
   const YAML::Node& node,
   stomp::STOMP& s) {  // NOLINT(runtime/references)
-  if (node["stomp"] == NULL) {
+  if (node["max_rollouts"] == NULL) {
     throw stomp::ExceptionYaml(
-      "stomp::STOMP requires stomp component");
+      "stomp::STOMP requires max_rollouts component");
   }
+  s.max_rollouts_ = node["max_rollouts"].as<int>();
 
-  // std::string temp = Convert<std::string>(node, "serial_port_dev");
+  if (node["min_rollouts"] == NULL) {
+    throw stomp::ExceptionYaml(
+      "stomp::STOMP requires min_rollouts component");
+  }
+  s.min_rollouts_ = node["min_rollouts"].as<int>();
+
+  if (node["num_rollouts_per_iteration"] == NULL) {
+    throw stomp::ExceptionYaml(
+      "stomp::STOMP requires num_rollouts_per_iteration component");
+  }
+  s.num_rollouts_per_iteration_ =
+    node["num_rollouts_per_iteration"].as<int>();
+
+
+  if (node["noise_stddev"] == NULL) {
+    throw stomp::ExceptionYaml(
+      "stomp::STOMP requires noise_stddev component");
+  }
+  s.noise_stddev_ = node["noise_stddev"].as<std::vector<double>>();
+
+  if (node["noise_decay"] == NULL) {
+    throw stomp::ExceptionYaml(
+      "stomp::STOMP requires noise_decay component");
+  }
+  s.noise_decay_ = node["noise_decay"].as<std::vector<double>>();
+
+  if (node["noise_min_stddev"] == NULL) {
+    throw stomp::ExceptionYaml(
+      "stomp::STOMP requires noise_min_stddev component");
+  }
+  s.noise_min_stddev_ = node["noise_min_stddev"].as<
+    std::vector<double>>();
+
+  s.write_to_file_ = true;
+  if (node["write_to_file"] != NULL) {
+    s.write_to_file_ = node["write_to_file"].as<bool>();
+  }  // defaults are sometimes good!
+
+  s.use_noise_adaptation_ = true;
+  if (node["use_noise_adaptation"] != NULL) {
+    s.use_noise_adaptation_ = node["use_noise_adaptation"].as<bool>();
+  }  // defaults are sometimes good!
+
+  s.use_openmp_ = false;
+  if (node["use_openmp"] != NULL) {
+    s.use_openmp_ = node["use_openmp"].as<bool>();
+  }  // defaults are sometimes good!
+
   return true;
 }
 

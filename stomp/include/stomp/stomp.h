@@ -82,7 +82,7 @@ class STOMP {
 
     void resetAdaptiveNoise();
 
- private:
+ // private:
     bool initialized_;
     ros::NodeHandle node_handle_;
 
