@@ -26,7 +26,6 @@ int Stomp2DTest::run() {
   rviz_pub_ = node_handle_.advertise<visualization_msgs::Marker>(
     "visualization", 100, false);
   srand(time(NULL));
-  num_dimensions_ = 6;
   resolution_ = 0.002;
   readParameters();
   mkdir(output_dir_.c_str(), 0755);
@@ -239,6 +238,10 @@ void Stomp2DTest::readParameters() {
     "starting_point", starting_point_));
   STOMP_VERIFY(readDoubleArray(node_handle_,
     "ending_point", ending_point_));
+  STOMP_VERIFY(node_handle_.getParam(
+    "num_dimensions", num_dimensions_));
+  // 2019-12-31 TODO(jim) consolidate starting(ending)_point / num_dimensions
+  // to infer num_dimensions_ from size of starting_point etc.
 }
 
 bool Stomp2DTest::execute(const std::vector<Eigen::VectorXd>& parameters,
