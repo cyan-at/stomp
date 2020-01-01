@@ -166,10 +166,17 @@ void STOMP::clearReusedRollouts() {
 
 bool STOMP::doGenRollouts(int iteration_number) {
   // compute appropriate noise values
+  #ifdef DEBUG_VERBOSE
+  printf("STOMP::doGenRollouts\n");
+  #endif
+
   std::vector<double> noise;
   noise.resize(num_dimensions_);
   for (int i = 0; i < num_dimensions_; ++i) {
     noise[i] = noise_stddev_[i] * pow(noise_decay_[i], iteration_number-1);
+    #ifdef DEBUG_VERBOSE
+    printf("noise[%d] %.3f\n", i, noise[i]);
+    #endif
   }
 
   // get rollouts
