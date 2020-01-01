@@ -89,7 +89,7 @@ class Stomp2DTest: public Task,
    */
   virtual double getControlCostWeight();
 
- private:
+ // private:
   boost::shared_ptr<stomp::STOMP> stomp_;
   // boost::shared_ptr<stomp::CHOMP> chomp_;
   boost::shared_ptr<stomp::CovariantMovementPrimitive> policy_;

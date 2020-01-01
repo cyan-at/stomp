@@ -626,7 +626,12 @@ bool convert<stomp::Stomp2DTest>::decode(
       "stomp::Stomp2DTest requires stomp component");
   }
 
-  // std::string temp = Convert<std::string>(node, "serial_port_dev");
+  if (node["num_iterations"] == NULL) {
+    throw stomp::ExceptionYaml(
+      "stomp::Stomp2DTest requires num_iterations component");
+  }
+  s.num_iterations_ = node["num_iterations"].as<int>();
+
   return true;
 }
 
@@ -639,16 +644,9 @@ int main(int argc, char ** argv) {
 
   YAML::Node n = YAML::LoadFile(
     "/home/jim/Dev/jim/stomp/stomp/test/stomp_2d_test.yaml");
-  stomp::Stomp2DTest test = n.as<stomp::Stomp2DTest>();
+  stomp::Stomp2DTest stomp_test = n.as<stomp::Stomp2DTest>();
 
-  // // check if we want to do large-scale testing
-  // ros::NodeHandle node_handle("~");
-  // bool large_scale = false;
-  // node_handle.getParam("large_scale", large_scale);
-
-  // boost::shared_ptr<stomp::Stomp2DTest> test(
-  //   new stomp::Stomp2DTest());
-  // return test->run();
-
-  return 0;
+  // need this otherwise breaks enable_shared_from_this
+  boost::shared_ptr<stomp::Stomp2DTest> test(&stomp_test);
+  return test->run();
 }
