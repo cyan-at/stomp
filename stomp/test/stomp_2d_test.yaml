@@ -38,14 +38,14 @@ ending_point: [0.9, 0.1, 0.0, 0.0, 0.0, 0.0]
 
 # cost function defintion. Each element defines an elliptical obstacle.
 obstacles:
-    -
-      center: [0.3, 0.0]
-      radius: [0.1, 0.7]
-      boolean: false
-    -
-      center: [0.7, 1.0]
-      radius: [0.1, 0.7]
-      boolean: false
+  -
+    center: [0.3, 0.0]
+    radius: [0.1, 0.7]
+    boolean: false
+  -
+    center: [0.7, 1.0]
+    radius: [0.1, 0.7]
+    boolean: false
 
 # list of cost functions for large scale testing:
 cost_functions:

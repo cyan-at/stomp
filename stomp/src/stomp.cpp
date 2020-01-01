@@ -80,7 +80,8 @@ bool STOMP::initialize(
   STOMP_VERIFY(policy_->getNumTimeSteps(num_time_steps_));
   control_cost_weight_ = task_->getControlCostWeight();
 
-  printf("NEW YEAR %d vs %d\n", num_dimensions_, static_cast<int>(noise_decay_.size()));
+  printf("NEW YEAR %d vs %d\n", num_dimensions_,
+    static_cast<int>(noise_decay_.size()));
 
   STOMP_VERIFY(policy_->getNumDimensions(num_dimensions_));
   ROS_ASSERT(num_dimensions_ == static_cast<int>(noise_decay_.size()));

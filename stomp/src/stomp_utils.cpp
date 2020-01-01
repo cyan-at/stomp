@@ -1,10 +1,9 @@
 #include <stomp/stomp_utils.h>
 
-namespace stomp
-{
+namespace stomp {
 
-void getDifferentiationMatrix(int num_time_steps, CostComponents order, double dt, Eigen::MatrixXd& diff_matrix)
-{
+void getDifferentiationMatrix(int num_time_steps,
+  CostComponents order, double dt, Eigen::MatrixXd& diff_matrix) {
   diff_matrix = Eigen::MatrixXd::Zero(num_time_steps, num_time_steps);
   double multiplier = 1.0/pow(dt,(int)order);
   for (int i=0; i<num_time_steps; ++i)
@@ -21,17 +20,20 @@ void getDifferentiationMatrix(int num_time_steps, CostComponents order, double d
   }
 }
 
-bool readDoubleArray(ros::NodeHandle& node_handle, const std::string& parameter_name, std::vector<double>& array, const bool verbose)
-{
+bool readDoubleArray(
+  ros::NodeHandle& node_handle,
+  const std::string& parameter_name,
+  std::vector<double>& array,
+  const bool verbose) {
   XmlRpc::XmlRpcValue d_array_xml;
-  if(!node_handle.getParam(parameter_name, d_array_xml))
-  {
-    ROS_ERROR_COND(verbose, "Could not retrieve parameter %s in namespace %s.", parameter_name.c_str(), node_handle.getNamespace().c_str());
+  if(!node_handle.getParam(parameter_name, d_array_xml)) {
+    ROS_ERROR_COND(verbose,
+      "Could not retrieve parameter %s in namespace %s.",
+      parameter_name.c_str(), node_handle.getNamespace().c_str());
     return false;
   }
 
-  if (d_array_xml.getType() != XmlRpc::XmlRpcValue::TypeArray)
-  {
+  if (d_array_xml.getType() != XmlRpc::XmlRpcValue::TypeArray) {
     ROS_ERROR_COND(verbose, "XmlRpcValue is not of type array.");
     return false;
   }

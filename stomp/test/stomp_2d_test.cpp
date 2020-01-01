@@ -650,11 +650,6 @@ bool convert<stomp::Obstacle>::decode(
 bool convert<stomp::Stomp2DTest>::decode(
   const YAML::Node& node,
   stomp::Stomp2DTest& s) {  // NOLINT(runtime/references)
-  if (node["stomp"] == NULL) {
-    throw stomp::ExceptionYaml(
-      "stomp::Stomp2DTest requires stomp component");
-  }
-
   if (node["num_iterations"] == NULL) {
     throw stomp::ExceptionYaml(
       "stomp::Stomp2DTest requires num_iterations component");
@@ -701,7 +696,8 @@ bool convert<stomp::Stomp2DTest>::decode(
     throw stomp::ExceptionYaml(
       "stomp::Stomp2DTest requires save_noiseless_trajectories component");
   }
-  s.save_noiseless_trajectories_ = node["save_noiseless_trajectories"].as<bool>();
+  s.save_noiseless_trajectories_ =
+    node["save_noiseless_trajectories"].as<bool>();
 
   if (node["save_cost_function"] == NULL) {
     throw stomp::ExceptionYaml(
@@ -781,6 +777,11 @@ int main(int argc, char ** argv) {
   ros::init(argc, argv, "test_stomp2d");
 
   YAML::Node n = YAML::LoadFile(argv[1]);
+  #ifdef DEBUG_VERBOSE
+  std::cout << "loaded n" << std::endl;
+  std::cout << n << std::endl;
+  #endif
+
   stomp::Stomp2DTest stomp_test = n.as<stomp::Stomp2DTest>();
 
   // need this otherwise breaks enable_shared_from_this
