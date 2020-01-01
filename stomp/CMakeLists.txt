@@ -38,10 +38,22 @@ add_library(stomp
 # target_compile_definitions(stomp PRIVATE DEBUG_VERBOSE=1)
 target_compile_definitions(stomp PRIVATE DEBUG=1)
 
-target_link_libraries(stomp
-  ${catkin_LIBRARIES}
-  yaml-cpp
-)
+if (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
+  target_link_libraries(
+    ${PROJECT_NAME}
+    # 2019-07-14 OSX: install yaml-cpp from https://github.com/jbeder/yaml-cpp
+    # then sudo make install install
+    # will generate below
+    /usr/local/lib/libyaml-cpp.a
+    ${roscpp_LIBRARIES}
+    ${catkin_LIBRARIES}
+  )
+else()
+  target_link_libraries(stomp
+    ${catkin_LIBRARIES}
+    yaml-cpp
+  )
+endif()
 
 #################################################
 
