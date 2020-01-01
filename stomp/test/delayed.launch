@@ -2,8 +2,13 @@
   <arg name="debug" default="false"/>
   <arg if="$(arg debug)" name="launch_prefix" value="xterm -rv -e gdb -ex run -args"/>
   <arg unless="$(arg debug)" name="launch_prefix" value=""/>
+  <rosparam command="load" file="$(find stomp)/test/stomp_2d_test.yaml"/>
 
-  <node pkg="stomp" name="test_stomp2d" type="test_stomp2d" output="screen" launch-prefix="$(arg launch_prefix)">
+  <node
+    name="test_stomp2d"
+    pkg="stomp"
+    type="delayed_exec.sh"
+    output="screen"
+    args="3 stomp stomp_2d_test.launch"/>
   </node>
 </launch>
-
