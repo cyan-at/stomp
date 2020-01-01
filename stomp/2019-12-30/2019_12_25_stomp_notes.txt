@@ -191,7 +191,7 @@ generalizable semantics?
 what do the result all_parameters look like?
 can we introduce a 3rd dimension to the path, to the cost function
 relate control vectors / fk to that?
-***
+*** WIP
   int Stomp2DTest::run() {
     // initialize rviz publisher
     rviz_pub_ = node_handle_.advertise<visualization_msgs::Marker>(
@@ -207,7 +207,7 @@ relate control vectors / fk to that?
 ##################################################################
 
 what happens at the beginning COMPLETELY, steps and classes involved?
-***
+*** WIP
   refactor things to be on a blackboard
   or list out everything as if it was on a blackboard in the beginning
   so you can inspect everything on the blackboard
@@ -227,6 +227,8 @@ what happens at the beginning COMPLETELY, steps and classes involved?
 
 after modifying the num_dimensions to 6, noiseless cost is nan
 why?
+*** WIP
+  blah
 
 ##################################################################
 
