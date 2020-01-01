@@ -10,5 +10,4 @@
     type="delayed_exec.sh"
     output="screen"
     args="3 stomp stomp_2d_test.launch"/>
-  </node>
 </launch>
