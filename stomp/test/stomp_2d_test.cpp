@@ -780,8 +780,7 @@ bool convert<stomp::Stomp2DTest>::decode(
 int main(int argc, char ** argv) {
   ros::init(argc, argv, "test_stomp2d");
 
-  YAML::Node n = YAML::LoadFile(
-    "/home/jim/Dev/jim/stomp/stomp/test/stomp_2d_test.yaml");
+  YAML::Node n = YAML::LoadFile(argv[1]);
   stomp::Stomp2DTest stomp_test = n.as<stomp::Stomp2DTest>();
 
   // need this otherwise breaks enable_shared_from_this

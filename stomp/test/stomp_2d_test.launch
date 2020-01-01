@@ -2,8 +2,14 @@
   <arg name="debug" default="false"/>
   <arg if="$(arg debug)" name="launch_prefix" value="xterm -rv -e gdb -ex run -args"/>
   <arg unless="$(arg debug)" name="launch_prefix" value=""/>
+  <arg name="yaml_file" default="/home/jim/Dev/jim/stomp/stomp/test/stomp_2d_test.yaml"/>
 
-  <node pkg="stomp" name="test_stomp2d" type="test_stomp2d" output="screen" launch-prefix="$(arg launch_prefix)">
+  <node pkg="stomp"
+    name="test_stomp2d"
+    type="test_stomp2d"
+    output="screen"
+    launch-prefix="$(arg launch_prefix)"
+    args="$(arg yaml_file)">
   </node>
 </launch>
 

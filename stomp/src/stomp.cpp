@@ -122,13 +122,6 @@ bool STOMP::initialize(
 }
 
 bool STOMP::readParameters() {
-  YAML::Node config = YAML::LoadFile(
-    "/home/jim/Dev/jim/stomp/stomp/test/stomp_2d_test.yaml");
-
-  if (config["stomp"]["min_rollouts"]) {
-    min_rollouts_ = config["stomp"]["min_rollouts"].as<int>();
-    std::cout << "min rollouts found!!! " << min_rollouts_ << "\n";
-  }
   STOMP_VERIFY(node_handle_.getParam(
     "min_rollouts",
     min_rollouts_));
