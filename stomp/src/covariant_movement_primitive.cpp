@@ -65,6 +65,13 @@ bool CovariantMovementPrimitive::initialize(
   STOMP_VERIFY(initializeCosts());
   STOMP_VERIFY(initializeBasisFunctions());
 
+  #ifdef DEBUG_VERBOSE
+  for (int d = 0; d < num_dimensions_; ++d) {
+    printf("initial_trajectory parameters_all_ @ dimension %d\n", d);
+    std::cout << parameters_all_[d] << std::endl;
+  }
+  #endif
+
   return true;
 }
 
@@ -74,6 +81,10 @@ bool CovariantMovementPrimitive::setToMinControlCost() {
 }
 
 bool CovariantMovementPrimitive::computeLinearControlCosts() {
+  #ifdef DEBUG_VERBOSE
+  printf("CovariantMovementPrimitive::computeLinearControlCosts running\n");
+  #endif
+
   linear_control_costs_.clear();
   linear_control_costs_.resize(num_dimensions_, VectorXd::Zero(num_vars_free_));
   constant_control_costs_.clear();
@@ -219,14 +230,13 @@ bool CovariantMovementPrimitive::getDerivatives(
   return true;
 }
 
-bool CovariantMovementPrimitive::computeControlCostGradient(const std::vector<Eigen::VectorXd>& parameters,
-                                const double weight,
-                                std::vector<Eigen::VectorXd>& gradient)
-{
+bool CovariantMovementPrimitive::computeControlCostGradient(
+  const std::vector<Eigen::VectorXd>& parameters,
+  const double weight,
+  std::vector<Eigen::VectorXd>& gradient) {
   gradient.resize(num_dimensions_, Eigen::VectorXd::Zero(num_vars_free_));
 
-  for (int d=0; d<num_dimensions_; ++d)
-  {
+  for (int d = 0; d < num_dimensions_; ++d) {
     gradient[d] = weight * (2.0 * control_costs_[d] * parameters[d] + linear_control_costs_[d]);
   }
 
@@ -238,196 +248,111 @@ bool CovariantMovementPrimitive::computeControlCosts(
   const std::vector<Eigen::VectorXd>& noise,
   const double weight,
   std::vector<Eigen::VectorXd>& control_costs) {
+  #ifdef DEBUG_VERBOSE
+  printf("CovariantMovementPrimitive::computeControlCosts\n");
+  #endif
+
   // printf("Weight = %f\n", weight);
+
   // this uses the already squared control cost matrix
   for (int d = 0; d < num_dimensions_; ++d) {
+    #ifdef DEBUG_VERBOSE
+    if (d == 2) {
+      printf("&&&&&&&&&&&&&&&&&&&&&&&&&&&&& d = %d\n", d);
+    }
+    #endif
+
     VectorXd params_all = parameters_all_[d];
-    VectorXd params_free = parameters[d] + noise[d];
-    VectorXd costs_all = VectorXd::Zero(num_vars_all_);
+
+    #ifdef DEBUG_VERBOSE
+    if (d == 2) {
+      printf("================ params_all before\n");
+      std::cout << params_all << std::endl;
+    }
+    #endif
+
+    #ifdef DEBUG_VERBOSE
+    if (d == 2) {
+      printf("================ adding parameters[d]\n");
+      std::cout << parameters[d] << std::endl;
+
+      // 2019-12-31
+      // TURNS OUT NOISE IS THE SOURCE OF NAN's!!!
+      printf("================ adding noise[d]\n");
+      std::cout << noise[d] << std::endl;
+    }
+    #endif
+
+    // VectorXd params_free = parameters[d] + noise[d];
     params_all.segment(free_vars_start_index_,
       num_vars_free_) = parameters[d] + noise[d];
 
-//    costs_all = weight * (params_all.array() *
-//        (control_costs_all_[d] * params_all).array()).matrix();
-//    control_costs[d] = costs_all.segment(free_vars_start_index_, num_vars_free_);
-//
-//    for (int i=0; i<free_vars_start_index_; ++i)
-//    {
-//      control_costs[d](0) += costs_all(i);
-//      control_costs[d](num_vars_free_-1) += costs_all(num_vars_all_-(i+1));
-//    }
-
-    // compute costs using control_costs_all
-//    double costs_all = weight * params_all.transpose() * control_costs_all_[d] * params_all;
-//    control_costs[d] = Eigen::VectorXd::Ones(num_vars_free_) * costs_all;
-
-    // compute costs using control_costs_free and linear_costs (constant per time-step)
-//    double costs = params_free.transpose() * control_costs_[d] * params_free;
-//    costs += linear_control_costs_[d].transpose() * params_free;
-//    costs += constant_control_costs_[d];
-//    control_costs[d] = (1.0/num_parameters_[d]) * weight * costs * Eigen::VectorXd::Ones(num_vars_free_);
-
+    #ifdef DEBUG_VERBOSE
+    if (d == 2) {
+      printf("================ params_all\n");
+      std::cout << params_all << std::endl;
+    }
+    #endif
 
     // compute them from the original diff matrices, per timestep
+    VectorXd costs_all = VectorXd::Zero(num_vars_all_);
     for (int i = 0; i < NUM_DIFF_RULES; ++i) {
       Eigen::ArrayXXd Ax = (differentiation_matrices_[i] * params_all).array() *
           derivative_costs_sqrt_[d].col(i).array();
       costs_all += movement_dt_ * weight * (Ax * Ax).matrix();
     }
     control_costs[d] = costs_all.segment(free_vars_start_index_, num_vars_free_);
-    // control_costs[d] = Eigen::VectorXd::Zero(num_vars_free_); // TODO FIXME we don't use the cost above for now
+
+    #ifdef DEBUG_VERBOSE
+    if (d == 2) {
+      printf("################ control_costs[d]\n");
+      std::cout << control_costs[d] << std::endl;
+    }
+    #endif
+
+    // control_costs[d] = Eigen::VectorXd::Zero(num_vars_free_);
+    // TODO FIXME we don't use the cost above for now
     for (int i = 0; i < free_vars_start_index_; ++i) {
       control_costs[d](0) += costs_all(i);
       control_costs[d](num_vars_free_-1) += costs_all(num_vars_all_-(i+1));
     }
 
-
-    //printf("Control costs for dim %d = %f\n", d, control_costs[d].sum());
-
-    // add linear costs:
-//    control_costs[d] += weight * (linear_control_costs_[d].array() *
-//        parameters_all_[d].segment(free_vars_start_index_, num_vars_free_).array()).matrix();
-
+    #ifdef DEBUG_VERBOSE
+    if (d == 2) {
+      printf("---------------- control_costs[d]\n");
+      std::cout << control_costs[d] << std::endl;
+    }
+    #endif
   }
-
-
-  // this measures the accelerations and squares them
-//  for (int d=0; d<num_dimensions_; ++d)
-//  {
-//    VectorXd params_all = parameters_all_[d];
-//    VectorXd costs_all = VectorXd::Zero(num_vars_all_);
-//
-//    params_all.segment(free_vars_start_index_, num_vars_free_) = parameters[d] + noise[d];
-//    VectorXd acc_all = VectorXd::Zero(num_vars_all_);
-//    for (int i=0; i<NUM_DIFF_RULES; ++i)
-//    {
-//      acc_all = differentiation_matrices_[i]*params_all;
-//      costs_all += weight * derivative_costs_[i] * (acc_all.array()*acc_all.array()).matrix();
-//    }
-//
-//    control_costs[d] = costs_all.segment(free_vars_start_index_, num_vars_free_);
-//    for (int i=0; i<free_vars_start_index_; ++i)
-//    {
-//      control_costs[d](0) += costs_all(i);
-//      control_costs[d](num_vars_free_-1) += costs_all(num_vars_all_-(i+1));
-//    }
-//  }
-
-
   return true;
 }
-
-
-//bool CovariantMovementPrimitive::computeControlCosts(const std::vector<Eigen::MatrixXd>& control_cost_matrices, const std::vector<std::vector<Eigen::VectorXd> >& parameters,
-//                                                     const double weight, std::vector<Eigen::VectorXd>& control_costs)
-//{
-//  //Policy::computeControlCosts(control_cost_matrices, parameters, weight, control_costs);
-//
-//  // we use the locally stored control costs
-//
-//  // this uses the already squared control cost matrix
-//  /*for (int d=0; d<num_dimensions_; ++d)
-//    {
-//        control_costs[d] = VectorXd::Zero(num_time_steps_);
-//        VectorXd params_all = parameters_all_[d];
-//        for (int t=0; t<num_time_steps_; ++t)
-//        {
-//            params_all.segment(free_vars_start_index_, num_vars_free_) = parameters[d][t];
-//            VectorXd r_times_u = control_costs_all_[d] * params_all;
-//            control_costs[d] += weight * (r_times_u.segment(free_vars_start_index_, num_vars_free_).cwise() * parameters[d][t]);
-//        }
-//    }*/
-//
-//
-//  // this measures the accelerations and squares them
-//  for (int d=0; d<num_dimensions_; ++d)
-//  {
-//    VectorXd params_all = parameters_all_[d];
-//    VectorXd costs_all = VectorXd::Zero(num_vars_all_);
-//    for (int t=0; t<num_time_steps_; ++t)
-//    {
-//      params_all.segment(free_vars_start_index_, num_vars_free_) = parameters[d][t];
-//      VectorXd acc_all = VectorXd::Zero(num_vars_all_);
-//      for (int i=0; i<NUM_DIFF_RULES; ++i)
-//      {
-//        acc_all = differentiation_matrices_[i]*params_all;
-//        costs_all += weight * derivative_costs_[i] * (acc_all.array()*acc_all.array()).matrix();
-//      }
-//    }
-//    control_costs[d] = costs_all.segment(free_vars_start_index_, num_vars_free_);
-//    for (int i=0; i<free_vars_start_index_; ++i)
-//    {
-//      control_costs[d](0) += costs_all(i);
-//      control_costs[d](num_vars_free_-1) += costs_all(num_vars_all_-(i+1));
-//    }
-//  }
-//
-//
-//  return true;
-//}
 
 bool CovariantMovementPrimitive::updateParameters(
   const std::vector<Eigen::MatrixXd>& updates,
   const std::vector<Eigen::VectorXd>& time_step_weights) {
   ROS_ASSERT(int(updates.size()) == num_dimensions_);
-
-  // this takes only the diagonal elements
-  /*for (int d=0; d<num_dimensions_; ++d)
-    {
-        parameters_all_[d].segment(free_vars_start_index_, num_vars_free_) += updates[d].diagonal();
-    }*/
+  #ifdef DEBUG_VERBOSE
+  printf("CovariantMovementPrimitive::updateParameters\n");
+  #endif
 
   // this averages all the updates
   // double divisor = 1.0 / num_vars_free_;
   double divisor = 1.0;
   for (int d = 0; d < num_dimensions_; ++d) {
+    #ifdef DEBUG_VERBOSE
+    if (d == 2) {
+      printf("~~~~~~~~~~~~~~~~~~~ updates[%d].row(0)\n", d);
+      std::cout << updates[d].row(0) << std::endl;
+    }
+    #endif
+
     parameters_all_[d].segment(
       free_vars_start_index_, num_vars_free_).transpose() +=
         divisor * updates[d].row(0);
   }
 
-  //    for (int d=0; d<num_dimensions_; ++d)
-  //    {
-  //      double weight = 0.0;
-  //      double weight_sum = 0.0;
-  //
-  //      Eigen::VectorXd update = Eigen::VectorXd::Zero(num_vars_free_);
-  //      for (int t=0; t<num_time_steps_; ++t)
-  //      {
-  //          weight = time_step_weights[d][t];
-  //          weight_sum += weight;
-  //          update.transpose() += updates[d].row(t) * weight;
-  //          //ROS_INFO_STREAM("Update at time " << t << " = " << updates[d].row(t));
-  //      }
-  //      if (weight_sum <1e-6)
-  //        weight_sum = 1e-6;
-  //      parameters_all_[d].segment(free_vars_start_index_, num_vars_free_) += (1.0/weight_sum)*update;
-  //    }
-
-  // this weights updates by number of time-steps remaining:
-  //    for (int d=0; d<num_dimensions_; ++d)
-  //    {
-  //        double weight=0.0;
-  //        double weight_sum=0.0;
-  //        Eigen::VectorXd update = Eigen::VectorXd::Zero(num_vars_free_);
-  //        for (int t=0; t<num_time_steps_; ++t)
-  //        {
-  //            weight = double(num_time_steps_ - t);
-  //            weight_sum += weight;
-  //            update.transpose() += updates[d].row(t) * weight;
-  //            //ROS_INFO_STREAM("Update at time " << t << " = " << updates[d].row(t));
-  //        }
-  //        parameters_all_[d].segment(free_vars_start_index_, num_vars_free_) += (1.0/weight_sum)*update;
-  //    }
-
   return true;
 }
-
-//bool CovariantMovementPrimitive::readFromDisc(const std::string abs_file_name)
-//{
-//    // TODO: implement this
-//    return true;
-//}
 
 bool CovariantMovementPrimitive::writeToFile(const std::string abs_file_name)
 {

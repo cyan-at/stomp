@@ -238,8 +238,12 @@ bool STOMP::doUpdate(int iteration_number) {
   // improve the policy
   STOMP_VERIFY(policy_improvement_.improvePolicy(
     parameter_updates_));
-  STOMP_VERIFY(policy_improvement_.getTimeStepWeights(
-    time_step_weights_));
+
+  // 2019-12-31 we don't use time_step_weights in any way
+  // ignore for now?
+  // STOMP_VERIFY(policy_improvement_.getTimeStepWeights(
+  //   time_step_weights_));
+
   STOMP_VERIFY(policy_->updateParameters(
     parameter_updates_, time_step_weights_));
 
@@ -262,7 +266,10 @@ bool STOMP::doNoiselessRollout(int iteration_number) {
   double total_cost;
   policy_improvement_.setNoiselessRolloutCosts(
     tmp_rollout_cost_[0], total_cost);
+
+  #ifdef DEBUG
   ROS_INFO("Noiseless cost = %lf", total_cost);
+  #endif
 
   if (total_cost < best_noiseless_cost_) {
     best_noiseless_parameters_ = parameters_;
