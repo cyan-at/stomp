@@ -27,10 +27,16 @@ add_library(stomp
   src/policy_improvement.cpp
   src/stomp.cpp
 )
+# 2019-12-31 wrap debug printfs/couts with preprocessor macro
+# turn off to disable
+# target_compile_definitions(stomp PRIVATE DEBUG_VERBOSE=1)
+target_compile_definitions(stomp PRIVATE DEBUG=1)
 
 add_executable(test_stomp2d
   test/stomp_2d_test.cpp
 )
+
+
 # add_executable(test_cmp
 #   test/test_cmp.cpp
 # )
