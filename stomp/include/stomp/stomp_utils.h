@@ -101,6 +101,13 @@ bool getParam(XmlRpc::XmlRpcValue& config, const std::string& key, double& value
 bool getParam(XmlRpc::XmlRpcValue& config, const std::string& key, std::vector<double>& double_array);
 bool getParam(XmlRpc::XmlRpcValue& config, const std::string& key, bool& value);
 
+// 2020-01-01 use this, otherwise when stack frame pops
+// and boost tries to dealloc ptr, object is gone
+// you end program with segfault
+// #cool https://stackoverflow.com/a/14830899
+template <typename T>
+void null_deleter(T *) {}
+
 class ExceptionYaml : public std::runtime_error {
  public:
   explicit ExceptionYaml(const std::string& msg) : std::runtime_error(msg) {}

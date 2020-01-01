@@ -85,7 +85,8 @@ int Stomp2DTest::run() {
 
   ros::NodeHandle stomp_node_handle(node_handle_, "stomp");
   stomp_.reset(new stomp::STOMP());
-  stomp_->initialize(num_dimensions_, stomp_node_handle, shared_from_this());
+  stomp_->initialize(num_dimensions_,
+    stomp_node_handle, shared_from_this());
 
   // ros::NodeHandle chomp_node_handle(node_handle_, "chomp");
   // chomp_.reset(new stomp::CHOMP());
@@ -765,12 +766,6 @@ bool convert<stomp::Stomp2DTest>::decode(
 
 // ##################################################################
 
-// 2020-01-01 use this, otherwise when stack frame pops
-// and boost tries to dealloc ptr, object is gone
-// you end program with segfault
-// #cool https://stackoverflow.com/a/14830899
-void null_deleter(stomp::Stomp2DTest *) {}
-
 int main(int argc, char ** argv) {
   ros::init(argc, argv, "test_stomp2d");
 
@@ -779,7 +774,8 @@ int main(int argc, char ** argv) {
   stomp::Stomp2DTest stomp_test = n.as<stomp::Stomp2DTest>();
 
   // need this otherwise breaks enable_shared_from_this
-  boost::shared_ptr<stomp::Stomp2DTest> test(&stomp_test, &null_deleter);
+  boost::shared_ptr<stomp::Stomp2DTest> test(&stomp_test,
+    &stomp::null_deleter<stomp::Stomp2DTest>);
   int res = test->run();
 
   return res;
