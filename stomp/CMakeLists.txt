@@ -37,6 +37,7 @@ add_library(stomp
 # turn off to disable
 # target_compile_definitions(stomp PRIVATE DEBUG_VERBOSE=1)
 target_compile_definitions(stomp PRIVATE DEBUG=1)
+target_compile_definitions(stomp PRIVATE DEBUG_COST=1)
 
 if (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
   target_link_libraries(

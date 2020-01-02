@@ -139,5 +139,20 @@
     }*/
 
 
+##################################################################
+from stomp_2d_test.cpp/h
+double evaluateCostPath(
+  double x1, double y1, double x2, double y2, double vx, double vy) const;
+
+double Stomp2DTest::evaluateCostPath(
+  double x1, double y1,
+  double x2, double y2,
+  double vx, double vy) const {
+  double ax = 0.0, ay = 0.0, gx = 0.0, gy = 0.0;
+  return evaluateCostPathWithGradients(
+    x1, y1, x2, y2, vx, vy, false, ax, ay, gx, gy);
+}
+
+
 
 

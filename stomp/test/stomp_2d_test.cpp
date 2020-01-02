@@ -277,34 +277,43 @@ bool Stomp2DTest::execute(const std::vector<Eigen::VectorXd>& parameters,
   bool& validity) {
   *costs = Eigen::VectorXd::Zero(num_time_steps_);
 
-  // printf("running execute\n");
+  // ##################################################################
   // weighted_feature_values = Eigen::MatrixXd::Zero(num_time_steps_, 1);
-  Eigen::MatrixXd proj_pos(
-    num_dimensions_, num_time_steps_ + 2*TRAJECTORY_PADDING);
-  Eigen::MatrixXd pos(num_dimensions_, num_time_steps_ + 2*TRAJECTORY_PADDING);
-  Eigen::MatrixXd vel(num_dimensions_, num_time_steps_ + 2*TRAJECTORY_PADDING);
-  Eigen::MatrixXd acc(num_dimensions_, num_time_steps_ + 2*TRAJECTORY_PADDING);
+
+  Eigen::MatrixXd pos(num_dimensions_,
+    num_time_steps_ + 2*TRAJECTORY_PADDING);
+  Eigen::MatrixXd vel(num_dimensions_,
+    num_time_steps_ + 2*TRAJECTORY_PADDING);
+  Eigen::MatrixXd acc(num_dimensions_,
+    num_time_steps_ + 2*TRAJECTORY_PADDING);
+
+  Eigen::MatrixXd proj_pos(num_dimensions_,
+    num_time_steps_ + 2*TRAJECTORY_PADDING);
 
   for (int d = 0; d < num_dimensions_; ++d) {
-    proj_pos.row(d) = initial_trajectory_[d];
-    pos.row(d) = initial_trajectory_[d];
     // printf("lvalue size = %d, %d, rvalue size = %d, %d", 1,
     //   num_time_steps_, projected_parameters[d].rows(),
     //   projected_parameters[d].cols());
+    proj_pos.row(d) = initial_trajectory_[d];
     proj_pos.block(d, TRAJECTORY_PADDING,
       1, num_time_steps_) = projected_parameters[d].transpose();
+
+    pos.row(d) = initial_trajectory_[d];
     pos.block(d, TRAJECTORY_PADDING,
       1, num_time_steps_) = parameters[d].transpose();
   }
 
   if (compute_gradients) {
-    gradients.resize(num_dimensions_, Eigen::VectorXd::Zero(num_time_steps_));
+    gradients.resize(num_dimensions_,
+      Eigen::VectorXd::Zero(num_time_steps_));
   }
 
   vel = (vel_diff_matrix_ * pos.transpose()).transpose();
+
   if (compute_gradients) {
     acc = (acc_diff_matrix_ * pos.transpose()).transpose();
   }
+  // ##################################################################
 
   // 2019-12-26 COMPUTE COSTS HERE!!!
   // Expression 2(a) in paper, S(theta_k_i), S(t_i)
@@ -313,18 +322,35 @@ bool Stomp2DTest::execute(const std::vector<Eigen::VectorXd>& parameters,
   double py = 0.01;
   for (int t = TRAJECTORY_PADDING;
     t < TRAJECTORY_PADDING+num_time_steps_; ++t) {
+    // compute the cost for this rollout
+
     double x = pos(0, t);
     double y = pos(1, t);
+
     double cost = 0.0;
     if (compute_gradients) {
       cost = evaluateCostPathWithGradients(
-        px, py, x, y, vel(0, t), vel(1, t), true,
-        acc(0, t), acc(1, t), gradients[0](t-TRAJECTORY_PADDING),
+        px, py,
+        x, y,
+        vel(0, t), vel(1, t),
+        true,
+        acc(0, t), acc(1, t),
+        gradients[0](t-TRAJECTORY_PADDING),
         gradients[1](t-TRAJECTORY_PADDING));
     } else {
-      cost = evaluateCostPath(px, py, x, y, vel(0, t), vel(1, t));
+      double gx = 0.0, gy = 0.0;
+      // 2020-01-01 gx/y need to be non-temporary
+      // because they are refs
+      cost = evaluateCostPathWithGradients(
+        px, py,
+        x, y,
+        vel(0, t), vel(1, t),
+        false,
+        0.0, 0.0,
+        gx, gy);
     }
     (*costs)(t-TRAJECTORY_PADDING) = cost;
+
     px = x;
     py = y;
   }
@@ -335,10 +361,18 @@ bool Stomp2DTest::execute(const std::vector<Eigen::VectorXd>& parameters,
 double Stomp2DTest::evaluateCost(
   double x, double y, double vx, double vy) const {
   double ax = 0.0, ay = 0.0, gx = 0.0, gy = 0.0;
-  return evaluateCostWithGradients(x, y, vx, vy, false, ax, ay, gx, gy);
+  return evaluateCostWithGradients(
+    x, y,
+    vx, vy,
+    false,
+    ax, ay,
+    gx, gy);
 }
 
 double Stomp2DTest::evaluateMapCost(double x, double y) const {
+  #ifdef DEBUG_COST
+  printf("Stomp2DTest::evaluateMapCost\n");
+  #endif
 
   double cost = 0.0;
 
@@ -375,8 +409,12 @@ double Stomp2DTest::evaluateMapCost(double x, double y) const {
       }
     }
   }
+  // TODO(jim) generalize this to 3D obstacles
 
   // joint limits
+  // TODO(jim) generalize this to n dimensions
+  // parsed from YAML file
+  // as well as cost for exceeding
   const double joint_limit_cost = 100.0;
   if (x < 0.0) {
     cost += joint_limit_cost * -x;
@@ -390,21 +428,27 @@ double Stomp2DTest::evaluateMapCost(double x, double y) const {
   if (y > 1.0) {
     cost += joint_limit_cost * (y - 1.0);
   }
+
   return cost;
 }
 
 void Stomp2DTest::evaluateMapGradients(
   double x, double y, double& gx, double& gy) const {
-  gx = (evaluateMapCost(
-    x+resolution_, y) - evaluateMapCost(x-resolution_, y)) / (2*resolution_);
-  gy = (evaluateMapCost(
-    x, y+resolution_) - evaluateMapCost(x, y-resolution_)) / (2*resolution_);
+  // average map cost / map area (2 * resolution big)
+  gx = (evaluateMapCost(x + resolution_, y)
+    - evaluateMapCost(x - resolution_, y)) / (2 * resolution_);
+  gy = (evaluateMapCost(x, y + resolution_)
+    - evaluateMapCost(x, y - resolution_)) / (2 * resolution_);
 }
 
 double Stomp2DTest::evaluateCostWithGradients(
   double x, double y, double vx, double vy,
   bool compute_gradients,
   double ax, double ay, double& gx, double& gy) const {
+  #ifdef DEBUG_COST
+  printf("Stomp2DTest::evaluateCostWithGradients\n");
+  #endif
+
   double cost = evaluateMapCost(x, y) * movement_dt_;
   double vel_mag = sqrt(vx*vx + vy*vy);
 
@@ -437,50 +481,61 @@ double Stomp2DTest::evaluateCostWithGradients(
   return cost*vel_mag;
 }
 
-double Stomp2DTest::evaluateCostPath(
-  double x1, double y1,
-  double x2, double y2,
-  double vx, double vy) const {
-  double ax = 0.0, ay = 0.0, gx = 0.0, gy = 0.0;
-  return evaluateCostPathWithGradients(
-    x1, y1, x2, y2, vx, vy, false, ax, ay, gx, gy);
-}
-
 double Stomp2DTest::evaluateCostPathWithGradients(
   double x1, double y1,
   double x2, double y2,
   double vx, double vy,
   bool compute_gradients,
-  double ax, double ay, double& gx, double& gy) const {
+  double ax, double ay,
+  double& gx, double& gy) const {
+  #ifdef DEBUG_COST
+  printf("Stomp2DTest::evaluateCostPathWithGradients\n");
+  #endif
+
   double dx = x2 - x1;
   double dy = y2 - y1;
   double dist = sqrt(dx*dx + dy*dy);
+
   int num_samples = ceil(dist / resolution_);
-  if (compute_gradients) {
-    gx = 0.0;
-    gy = 0.0;
-  }
   if (num_samples == 0)
     return 0.0;
   if (num_samples > 20)
     num_samples = 20;
+
+  if (compute_gradients) {
+    gx = 0.0;
+    gy = 0.0;
+  }
+
   double cost = 0.0;
   for (int i = 0; i < num_samples; ++i) {
     // leave out the last one to avoid double counting
-    double d = (static_cast<double>(i) / static_cast<double>(num_samples));
-    double x = x1 + d*dx;
-    double y = y1 + d*dy;
+
+    // 2020-01-01 semantics:
+    // sample the discretized 2D space
+    // with resolution (dx/y) / num_samples
+    double d = (static_cast<double>(i) /
+      static_cast<double>(num_samples));
+    double x = x1 + d * dx;
+    double y = y1 + d * dy;
+
     double temp_gx = 0.0, temp_gy = 0.0;
     cost += evaluateCostWithGradients(
-      x, y, vx, vy, compute_gradients, ax, ay, temp_gx, temp_gy);
+      x, y,
+      vx, vy,
+      compute_gradients,
+      ax, ay,
+      temp_gx, temp_gy);
     gx += temp_gx;
     gy += temp_gy;
   }
   cost /= num_samples;
+
   if (compute_gradients) {
     gx /= num_samples;
     gy /= num_samples;
   }
+
   return cost;
 }
 
