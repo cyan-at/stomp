@@ -11,7 +11,7 @@ save_noisy_trajectories: true
 save_noiseless_trajectories: true
 publish_to_rviz: true
 delay_per_iteration: 0.04
-num_iterations: 10
+num_iterations: 50
 save_cost_function: true
 
 ur:
@@ -42,8 +42,8 @@ chomp:
   learning_rate: 10.0
   max_update: 1000.0
 
-starting_point: [0.2, 0.2, 0.0, 0.0, 0.0, 0.0]
-ending_point: [0.9, 0.1, 0.0, 0.0, 0.0, 0.0]
+starting_point: [0.2, 0.2, 0.5, 0.0, 0.0, 0.0]
+ending_point: [0.9, 0.1, -0.5, 0.0, 0.0, 0.0]
 
 # cost function defintion. Each element defines an elliptical obstacle.
 obstacles:

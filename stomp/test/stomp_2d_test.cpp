@@ -318,14 +318,21 @@ bool Stomp2DTest::execute(const std::vector<Eigen::VectorXd>& parameters,
   // 2019-12-26 COMPUTE COSTS HERE!!!
   // Expression 2(a) in paper, S(theta_k_i), S(t_i)
   // cost of path, q(theta_k_i) state cost
+
+  // 2020-01-01 instead of px / py, rewrite to scalable
+  // get the t'th column of pos
   double px = 0.01;
   double py = 0.01;
+  Eigen::MatrixXd last_param_sample(num_dimensions_, 1);
+  last_param_sample = pos.col(0);
+
   for (int t = TRAJECTORY_PADDING;
     t < TRAJECTORY_PADDING+num_time_steps_; ++t) {
     // compute the cost for this rollout
 
     double x = pos(0, t);
     double y = pos(1, t);
+    last_param_sample = pos.col(t);
 
     double cost = 0.0;
     if (compute_gradients) {
@@ -488,10 +495,6 @@ double Stomp2DTest::evaluateCostPathWithGradients(
   bool compute_gradients,
   double ax, double ay,
   double& gx, double& gy) const {
-  #ifdef DEBUG_COST
-  printf("Stomp2DTest::evaluateCostPathWithGradients\n");
-  #endif
-
   double dx = x2 - x1;
   double dy = y2 - y1;
   double dist = sqrt(dx*dx + dy*dy);
@@ -604,6 +607,7 @@ void Stomp2DTest::visualizeCostFunction() {
 
   double min_cost = std::numeric_limits<double>::max();
   double max_cost = std::numeric_limits<double>::min();
+
   for (int i = 0; i < num_x; ++i) {
     double x = i*resolution_;
     for (int j = 0; j < num_y; ++j) {
@@ -632,9 +636,9 @@ void Stomp2DTest::visualizeCostFunction() {
     marker.points[i].z = 0.1 * scaled_cost;
 
     // interchange axes x and z
-    double x = marker.points[i].z;
-    marker.points[i].z = marker.points[i].x;
-    marker.points[i].x = x;
+    // double x = marker.points[i].z;
+    // marker.points[i].z = marker.points[i].x;
+    // marker.points[i].x = x;
   }
 
 
@@ -661,23 +665,33 @@ void Stomp2DTest::visualizeTrajectory(
   marker.type = visualization_msgs::Marker::LINE_STRIP;
   marker.action = visualization_msgs::Marker::ADD;
   marker.points.resize(num_time_steps_);
+
   // marker.colors.resize(num_time_steps_);
+
   for (int t = 0; t < num_time_steps_; ++t) {
-    marker.points[t].z = rollout.parameters_noise_[0][t];
+    marker.points[t].x = rollout.parameters_noise_[0][t];
     marker.points[t].y = rollout.parameters_noise_[1][t];
+
     double cost = evaluateMapCost(
-      rollout.parameters_noise_[0][t], rollout.parameters_noise_[1][t]);
-    marker.points[t].x = (
-      cost - cost_viz_scaling_const_) * cost_viz_scaling_factor_;
-    marker.points[t].x += 0.005;
+      rollout.parameters_noise_[0][t],
+      rollout.parameters_noise_[1][t]);
+
+    // marker.points[t].x = (
+    //   cost - cost_viz_scaling_const_) * cost_viz_scaling_factor_;
+    // marker.points[t].x += 0.005;
+
+    marker.points[t].z = cost;
   }
+
   marker.pose.position.x = 0;
   marker.pose.position.y = 0;
   marker.pose.position.z = 0;
+
   marker.pose.orientation.x = 0.0;
   marker.pose.orientation.y = 0.0;
   marker.pose.orientation.z = 0.0;
   marker.pose.orientation.w = 1.0;
+
   if (noiseless) {
     marker.scale.x = 0.01;
     marker.color.a = 1.0;
@@ -691,6 +705,7 @@ void Stomp2DTest::visualizeTrajectory(
     marker.color.g = 0.5;
     marker.color.b = 0.5;
   }
+
   rviz_pub_.publish(marker);
 }
 
