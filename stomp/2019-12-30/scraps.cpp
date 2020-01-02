@@ -144,7 +144,7 @@ from stomp_2d_test.cpp/h
 double evaluateCostPath(
   double x1, double y1, double x2, double y2, double vx, double vy) const;
 
-double Stomp2DTest::evaluateCostPath(
+double StompTest::evaluateCostPath(
   double x1, double y1,
   double x2, double y2,
   double vx, double vy) const {
@@ -168,7 +168,7 @@ from stomp_2d_test.cpp/h
 
 void readParameters();
 
-// void Stomp2DTest::readParameters() {
+// void StompTest::readParameters() {
 //   YAML::Node config = YAML::LoadFile(
 //     "/home/jim/Dev/jim/stomp/stomp/test/stomp_2d_test.yaml");
 
@@ -275,7 +275,7 @@ void readParameters();
 
 ##################################################################
 
-double Stomp2DTest::evaluateCost(
+double StompTest::evaluateCost(
   Eigen::MatrixXd* param_sample,
   double vx, double vy) const {
   double ax = 0.0, ay = 0.0, gx = 0.0, gy = 0.0;

@@ -21,7 +21,7 @@
 
 namespace stomp {
 
-int Stomp2DTest::run() {
+int StompTest::run() {
   stomp::DHJoint ur10_params;
   ur10_params.d1 = 0.1273;
   ur10_params.d4 = 0.163941;
@@ -200,11 +200,11 @@ int Stomp2DTest::run() {
   return 0;
 }
 
-bool Stomp2DTest::initialize(int num_threads, int num_rollouts) {
+bool StompTest::initialize(int num_threads, int num_rollouts) {
   return true;
 }
 
-void Stomp2DTest::writeCostFunction() {
+void StompTest::writeCostFunction() {
   std::stringstream ss;
   ss << output_dir_ << "/cost_function.txt";
   int num_x = lrint(1.0 / resolution_) + 1;
@@ -228,7 +228,7 @@ void Stomp2DTest::writeCostFunction() {
   fclose(f);
 }
 
-bool Stomp2DTest::execute(const std::vector<Eigen::VectorXd>& parameters,
+bool StompTest::execute(const std::vector<Eigen::VectorXd>& parameters,
   const std::vector<Eigen::VectorXd>& projected_parameters,
   Eigen::VectorXd* costs,
   Eigen::MatrixXd* weighted_feature_values,
@@ -331,7 +331,7 @@ bool Stomp2DTest::execute(const std::vector<Eigen::VectorXd>& parameters,
   return true;
 }
 
-double Stomp2DTest::interpPathSegmentAndEvaluateStateCost(
+double StompTest::interpPathSegmentAndEvaluateStateCost(
   Eigen::MatrixXd* last_param_sample,
   Eigen::MatrixXd* this_param_sample,
   double vx, double vy,
@@ -408,7 +408,7 @@ double Stomp2DTest::interpPathSegmentAndEvaluateStateCost(
   return cost;
 }
 
-double Stomp2DTest::evaluateStateCostWithGradients(
+double StompTest::evaluateStateCostWithGradients(
   Eigen::MatrixXd* param_sample,
   double vx, double vy,
   bool compute_gradients,
@@ -449,7 +449,7 @@ double Stomp2DTest::evaluateStateCostWithGradients(
   return cost * vel_mag;
 }
 
-bool Stomp2DTest::filter(std::vector<Eigen::VectorXd>& parameters,
+bool StompTest::filter(std::vector<Eigen::VectorXd>& parameters,
   int thread_id) const {
   return false;
   bool filtered = false;
@@ -468,19 +468,19 @@ bool Stomp2DTest::filter(std::vector<Eigen::VectorXd>& parameters,
   return filtered;
 }
 
-bool Stomp2DTest::getPolicy(
+bool StompTest::getPolicy(
   boost::shared_ptr<stomp::CovariantMovementPrimitive>& policy) {
   policy = policy_;
   return true;
 }
 
-bool Stomp2DTest::setPolicy(
+bool StompTest::setPolicy(
   const boost::shared_ptr<stomp::CovariantMovementPrimitive> policy) {
   policy_ = policy;
   return true;
 }
 
-double Stomp2DTest::getControlCostWeight() {
+double StompTest::getControlCostWeight() {
   return control_cost_weight_;
 }
 
@@ -488,7 +488,7 @@ double Stomp2DTest::getControlCostWeight() {
 
 //////////////////////////////////
 
-double Stomp2DTest::evaluateStateCostStrategy1(
+double StompTest::evaluateStateCostStrategy1(
   Eigen::MatrixXd* param_sample) const {
   double cost = 0.0;
 
@@ -552,7 +552,7 @@ double Stomp2DTest::evaluateStateCostStrategy1(
   return cost;
 }
 
-void Stomp2DTest::evaluateStateCostGradientStrategy1(
+void StompTest::evaluateStateCostGradientStrategy1(
   Eigen::MatrixXd* param_sample,
   double& gx, double& gy) const {
   // average map cost / map area (2 * resolution big)
@@ -562,7 +562,7 @@ void Stomp2DTest::evaluateStateCostGradientStrategy1(
   //   - evaluateStateCostStrategy1(x, y - resolution_)) / (2 * resolution_);
 }
 
-void Stomp2DTest::visualizeCostFunctionStrategy1() {
+void StompTest::visualizeCostFunctionStrategy1() {
   visualization_msgs::Marker marker;
 
   int num_x = lrint(1.0 / resolution_) + 1;
@@ -633,7 +633,7 @@ void Stomp2DTest::visualizeCostFunctionStrategy1() {
   rviz_pub_.publish(marker);
 }
 
-void Stomp2DTest::visualizeTrajectoryStrategy1(
+void StompTest::visualizeTrajectoryStrategy1(
   Rollout& rollout, bool noiseless, int id) {
   visualization_msgs::Marker marker;
   marker.header.frame_id = "BASE";
@@ -692,7 +692,7 @@ void Stomp2DTest::visualizeTrajectoryStrategy1(
 
 //////////////////////////////////
 
-double Stomp2DTest::evaluateStateCostStrategy2(
+double StompTest::evaluateStateCostStrategy2(
   Eigen::MatrixXd* param_sample) const {
   double cost = 0.0;
 
@@ -764,7 +764,7 @@ double Stomp2DTest::evaluateStateCostStrategy2(
   return cost;
 }
 
-void Stomp2DTest::visualizeCostFunctionStrategy2() {
+void StompTest::visualizeCostFunctionStrategy2() {
   for (int obstacle_i = 0; obstacle_i < obstacles_.size(); ++obstacle_i) {
     visualization_msgs::Marker marker;
 
@@ -860,7 +860,7 @@ void Stomp2DTest::visualizeCostFunctionStrategy2() {
   }
 }
 
-void Stomp2DTest::visualizeTrajectoryStrategy2(
+void StompTest::visualizeTrajectoryStrategy2(
   Rollout& rollout, bool noiseless, int id) {
   visualization_msgs::Marker marker;
   marker.header.frame_id = "BASE";
@@ -936,98 +936,98 @@ bool convert<stomp::Obstacle>::decode(
   return true;
 }
 
-bool convert<stomp::Stomp2DTest>::decode(
+bool convert<stomp::StompTest>::decode(
   const YAML::Node& node,
-  stomp::Stomp2DTest& s) {  // NOLINT(runtime/references)
+  stomp::StompTest& s) {  // NOLINT(runtime/references)
   if (node["num_iterations"] == NULL) {
     throw stomp::ExceptionYaml(
-      "stomp::Stomp2DTest requires num_iterations component");
+      "stomp::StompTest requires num_iterations component");
   }
   s.num_iterations_ = node["num_iterations"].as<int>();
 
   if (node["num_time_steps"] == NULL) {
     throw stomp::ExceptionYaml(
-      "stomp::Stomp2DTest requires num_time_steps component");
+      "stomp::StompTest requires num_time_steps component");
   }
   s.num_time_steps_ = node["num_time_steps"].as<int>();
 
   if (node["movement_duration"] == NULL) {
     throw stomp::ExceptionYaml(
-      "stomp::Stomp2DTest requires movement_duration component");
+      "stomp::StompTest requires movement_duration component");
   }
   s.movement_duration_ = node["movement_duration"].as<double>();
 
   if (node["control_cost_weight"] == NULL) {
     throw stomp::ExceptionYaml(
-      "stomp::Stomp2DTest requires control_cost_weight component");
+      "stomp::StompTest requires control_cost_weight component");
   }
   s.control_cost_weight_ = node["control_cost_weight"].as<double>();
 
   if (node["output_dir"] == NULL) {
     throw stomp::ExceptionYaml(
-      "stomp::Stomp2DTest requires output_dir component");
+      "stomp::StompTest requires output_dir component");
   }
   s.output_dir_ = node["output_dir"].as<std::string>();
 
   if (node["use_chomp"] == NULL) {
     throw stomp::ExceptionYaml(
-      "stomp::Stomp2DTest requires use_chomp component");
+      "stomp::StompTest requires use_chomp component");
   }
   s.use_chomp_ = node["use_chomp"].as<bool>();
 
   if (node["save_noisy_trajectories"] == NULL) {
     throw stomp::ExceptionYaml(
-      "stomp::Stomp2DTest requires save_noisy_trajectories component");
+      "stomp::StompTest requires save_noisy_trajectories component");
   }
   s.save_noisy_trajectories_ = node["save_noisy_trajectories"].as<bool>();
 
   if (node["save_noiseless_trajectories"] == NULL) {
     throw stomp::ExceptionYaml(
-      "stomp::Stomp2DTest requires save_noiseless_trajectories component");
+      "stomp::StompTest requires save_noiseless_trajectories component");
   }
   s.save_noiseless_trajectories_ =
     node["save_noiseless_trajectories"].as<bool>();
 
   if (node["save_cost_function"] == NULL) {
     throw stomp::ExceptionYaml(
-      "stomp::Stomp2DTest requires save_cost_function component");
+      "stomp::StompTest requires save_cost_function component");
   }
   s.save_cost_function_ = node["save_cost_function"].as<bool>();
 
   if (node["publish_to_rviz"] == NULL) {
     throw stomp::ExceptionYaml(
-      "stomp::Stomp2DTest requires publish_to_rviz component");
+      "stomp::StompTest requires publish_to_rviz component");
   }
   s.publish_to_rviz_ = node["publish_to_rviz"].as<bool>();
 
   if (node["delay_per_iteration"] == NULL) {
     throw stomp::ExceptionYaml(
-      "stomp::Stomp2DTest requires delay_per_iteration component");
+      "stomp::StompTest requires delay_per_iteration component");
   }
   s.delay_per_iteration_ = node["delay_per_iteration"].as<double>();
 
   if (node["starting_point"] == NULL) {
     throw stomp::ExceptionYaml(
-      "stomp::Stomp2DTest requires starting_point component");
+      "stomp::StompTest requires starting_point component");
   }
   s.starting_point_ = node["starting_point"].as<std::vector<double>>();
   if (node["ending_point"] == NULL) {
     throw stomp::ExceptionYaml(
-      "stomp::Stomp2DTest requires ending_point component");
+      "stomp::StompTest requires ending_point component");
   }
   s.ending_point_ = node["ending_point"].as<std::vector<double>>();
 
   if (s.starting_point_.size() == 0 || s.ending_point_.size() == 0) {
     throw stomp::ExceptionYaml(
-      "stomp::Stomp2DTest found starting_point or ending_point empty");
+      "stomp::StompTest found starting_point or ending_point empty");
   }
   if (s.starting_point_.size() != s.ending_point_.size()) {
     throw stomp::ExceptionYaml(
-      "stomp::Stomp2DTest found mismatch of starting_point, ending_point size");
+      "stomp::StompTest found mismatch of starting_point, ending_point size");
   }
   // if (node["num_dimensions"] == NULL) {
   //   throw stomp::ExceptionYaml(
-  //     "stomp::Stomp2DTest requires num_dimensions component");
+  //     "stomp::StompTest requires num_dimensions component");
   // }
   // s.num_dimensions_ = node["num_dimensions"].as<int>();
   // 2019-12-31 TODO(jim) consolidate starting(ending)_point / num_dimensions
@@ -1037,11 +1037,11 @@ bool convert<stomp::Stomp2DTest>::decode(
   /* load obstacles */
   if (node["obstacles"] == NULL) {
     throw stomp::ExceptionYaml(
-      "stomp::Stomp2DTest requires obstacles component");
+      "stomp::StompTest requires obstacles component");
   }
   if (!node["obstacles"].IsSequence()) {
     throw stomp::ExceptionYaml(
-      "stomp::Stomp2DTest requires obstacles sequence");
+      "stomp::StompTest requires obstacles sequence");
   }
   s.obstacles_.clear();
   for (unsigned int i = 0; i < node["obstacles"].size(); i++) {
@@ -1052,14 +1052,14 @@ bool convert<stomp::Stomp2DTest>::decode(
   /* load stomp object */
   if (node["stomp"] == NULL) {
     throw stomp::ExceptionYaml(
-      "stomp::Stomp2DTest requires stomp component");
+      "stomp::StompTest requires stomp component");
   }
   s.stomp = node["stomp"].as<stomp::STOMP>();
 
   /* load func ptrs TODO(jim, maybe) tie this to yaml? */
-  s.evaluateStateCostStrategy = &stomp::Stomp2DTest::evaluateStateCostStrategy2;
-  s.visualizeCostFunctionStrategy = &stomp::Stomp2DTest::visualizeCostFunctionStrategy2;
-  s.visualizeTrajectoryStrategy = &stomp::Stomp2DTest::visualizeTrajectoryStrategy2;
+  s.evaluateStateCostStrategy = &stomp::StompTest::evaluateStateCostStrategy2;
+  s.visualizeCostFunctionStrategy = &stomp::StompTest::visualizeCostFunctionStrategy2;
+  s.visualizeTrajectoryStrategy = &stomp::StompTest::visualizeTrajectoryStrategy2;
 
   return true;
 }
@@ -1077,11 +1077,11 @@ int main(int argc, char ** argv) {
   std::cout << n << std::endl;
   #endif
 
-  stomp::Stomp2DTest stomp_test = n.as<stomp::Stomp2DTest>();
+  stomp::StompTest stomp_test = n.as<stomp::StompTest>();
 
   // need this otherwise breaks enable_shared_from_this
-  boost::shared_ptr<stomp::Stomp2DTest> test(&stomp_test,
-    &stomp::null_deleter<stomp::Stomp2DTest>);
+  boost::shared_ptr<stomp::StompTest> test(&stomp_test,
+    &stomp::null_deleter<stomp::StompTest>);
   int res = test->run();
 
   return res;

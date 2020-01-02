@@ -31,10 +31,10 @@ class Obstacle {
   Obstacle() {}
 };
 
-class Stomp2DTest: public Task,
-  public boost::enable_shared_from_this<Stomp2DTest> {
+class StompTest: public Task,
+  public boost::enable_shared_from_this<StompTest> {
  public:
-  Stomp2DTest():
+  StompTest():
     node_handle_("test_stomp2d") {}
 
   int run();
@@ -148,12 +148,12 @@ class Stomp2DTest: public Task,
 
   ////////////////////////////////// STRATEGY FUNCPTR DEFINITIONS
 
-  double (Stomp2DTest::*evaluateStateCostStrategy)(
+  double (StompTest::*evaluateStateCostStrategy)(
     Eigen::MatrixXd* param_sample) const;
 
-  void (Stomp2DTest::*visualizeCostFunctionStrategy)();
+  void (StompTest::*visualizeCostFunctionStrategy)();
 
-  void (Stomp2DTest::*visualizeTrajectoryStrategy)(
+  void (StompTest::*visualizeTrajectoryStrategy)(
     Rollout& rollout,
     bool noiseless,
     int id);
@@ -197,9 +197,9 @@ struct convert<stomp::Obstacle> {
 };
 
 template <>
-struct convert<stomp::Stomp2DTest> {
+struct convert<stomp::StompTest> {
   static bool decode(const YAML::Node& node,
-    stomp::Stomp2DTest& s);  // NOLINT(runtime/references)
+    stomp::StompTest& s);  // NOLINT(runtime/references)
 };
 
 }  // namespace YAML
