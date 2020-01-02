@@ -204,11 +204,16 @@ void Stomp2DTest::writeCostFunction() {
 
   FILE *f = fopen(ss.str().c_str(), "w");
   fprintf(f, "%d\t%d\n", num_x, num_y);
+
+  Eigen::MatrixXd param_sample = Eigen::MatrixXd::Zero(num_dimensions_, 1);
   for (int i = 0; i < num_x; ++i) {
     double x = i*resolution_;
     for (int j = 0; j < num_y; ++j) {
       double y = j*resolution_;
-      double cost = evaluateMapCost(x, y);
+
+      param_sample(0, 0) = x;
+      param_sample(1, 0) = y;
+      double cost = evaluateStateCostStrategy1(&param_sample);
       fprintf(f, "%lf\t%lf\t%lf\n", x, y, cost);
     }
   }
@@ -276,19 +281,21 @@ bool Stomp2DTest::execute(const std::vector<Eigen::VectorXd>& parameters,
   Eigen::MatrixXd last_param_sample(num_dimensions_, 1);
   last_param_sample = pos.col(0);
 
+  Eigen::MatrixXd this_param_sample(num_dimensions_, 1);
+
   for (int t = TRAJECTORY_PADDING;
     t < TRAJECTORY_PADDING+num_time_steps_; ++t) {
     // compute the cost for this rollout
 
     double x = pos(0, t);
     double y = pos(1, t);
-    last_param_sample = pos.col(t);
+    this_param_sample = pos.col(t);
 
     double cost = 0.0;
     if (compute_gradients) {
-      cost = evaluateCostPathWithGradients(
-        px, py,
-        x, y,
+      cost = interpPathSegmentAndEvaluateStateCost(
+        &last_param_sample,
+        &this_param_sample,
         vel(0, t), vel(1, t),
         true,
         acc(0, t), acc(1, t),
@@ -298,9 +305,9 @@ bool Stomp2DTest::execute(const std::vector<Eigen::VectorXd>& parameters,
       double gx = 0.0, gy = 0.0;
       // 2020-01-01 gx/y need to be non-temporary
       // because they are refs
-      cost = evaluateCostPathWithGradients(
-        px, py,
-        x, y,
+      cost = interpPathSegmentAndEvaluateStateCost(
+        &last_param_sample,
+        &this_param_sample,
         vel(0, t), vel(1, t),
         false,
         0.0, 0.0,
@@ -310,28 +317,30 @@ bool Stomp2DTest::execute(const std::vector<Eigen::VectorXd>& parameters,
 
     px = x;
     py = y;
+    last_param_sample = pos.col(t);
   }
   validity = true;
   return true;
 }
 
 double Stomp2DTest::evaluateCost(
-  double x, double y, double vx, double vy) const {
+  Eigen::MatrixXd* param_sample,
+  double vx, double vy) const {
   double ax = 0.0, ay = 0.0, gx = 0.0, gy = 0.0;
-  return evaluateCostWithGradients(
-    x, y,
+  return evaluateStateCostWithGradients(
+    param_sample,
     vx, vy,
     false,
     ax, ay,
     gx, gy);
 }
 
-double Stomp2DTest::evaluateMapCost(double x, double y) const {
-  #ifdef DEBUG_COST
-  printf("Stomp2DTest::evaluateMapCost\n");
-  #endif
-
+double Stomp2DTest::evaluateStateCostStrategy1(
+  Eigen::MatrixXd* param_sample) const {
   double cost = 0.0;
+
+  double x = (*param_sample)(0, 0);
+  double y = (*param_sample)(1, 0);
 
   for (unsigned int o = 0; o < obstacles_.size(); ++o) {
     double dx = (x - obstacles_[o].center_[0])
@@ -389,29 +398,30 @@ double Stomp2DTest::evaluateMapCost(double x, double y) const {
   return cost;
 }
 
-void Stomp2DTest::evaluateMapGradients(
-  double x, double y, double& gx, double& gy) const {
+void Stomp2DTest::evaluateStateCostGradientStrategy1(
+  Eigen::MatrixXd* param_sample,
+  double& gx, double& gy) const {
   // average map cost / map area (2 * resolution big)
-  gx = (evaluateMapCost(x + resolution_, y)
-    - evaluateMapCost(x - resolution_, y)) / (2 * resolution_);
-  gy = (evaluateMapCost(x, y + resolution_)
-    - evaluateMapCost(x, y - resolution_)) / (2 * resolution_);
+  // gx = (evaluateStateCostStrategy1(x + resolution_, y)
+  //   - evaluateStateCostStrategy1(x - resolution_, y)) / (2 * resolution_);
+  // gy = (evaluateStateCostStrategy1(x, y + resolution_)
+  //   - evaluateStateCostStrategy1(x, y - resolution_)) / (2 * resolution_);
 }
 
-double Stomp2DTest::evaluateCostWithGradients(
-  double x, double y, double vx, double vy,
+double Stomp2DTest::evaluateStateCostWithGradients(
+  Eigen::MatrixXd* param_sample,
+  double vx, double vy,
   bool compute_gradients,
-  double ax, double ay, double& gx, double& gy) const {
-  #ifdef DEBUG_COST
-  printf("Stomp2DTest::evaluateCostWithGradients\n");
-  #endif
+  double ax, double ay,
+  double& gx, double& gy) const {
+  double cost = evaluateStateCostStrategy1(param_sample) * movement_dt_;
 
-  double cost = evaluateMapCost(x, y) * movement_dt_;
   double vel_mag = sqrt(vx*vx + vy*vy);
 
+  /*
   if (compute_gradients) {
     double map_gx = 0.0, map_gy = 0.0;
-    evaluateMapGradients(x, y, map_gx, map_gy);
+    evaluateStateCostGradientStrategy1(x, y, map_gx, map_gy);
 
     map_gx *= movement_dt_;
     map_gy *= movement_dt_;
@@ -434,26 +444,31 @@ double Stomp2DTest::evaluateCostWithGradients(
     gx = new_grad(0);
     gy = new_grad(1);
   }
+  */
 
-  return cost*vel_mag;
+  return cost * vel_mag;
 }
 
-double Stomp2DTest::evaluateCostPathWithGradients(
-  double x1, double y1,
-  double x2, double y2,
+double Stomp2DTest::interpPathSegmentAndEvaluateStateCost(
+  Eigen::MatrixXd* last_param_sample,
+  Eigen::MatrixXd* this_param_sample,
   double vx, double vy,
   bool compute_gradients,
   double ax, double ay,
   double& gx, double& gy) const {
-  double dx = x2 - x1;
-  double dy = y2 - y1;
-  double dist = sqrt(dx*dx + dy*dy);
 
-  int num_samples = ceil(dist / resolution_);
-  if (num_samples == 0)
-    return 0.0;
-  if (num_samples > 20)
-    num_samples = 20;
+  // compute norm, get num_samples by resolution_
+  Eigen::MatrixXd delta = this_param_sample->col(0) - last_param_sample->col(0);
+  // PER DIMENSION, keep signage for interp
+
+  double total_delta_norm = delta.norm();
+  // total across all dimensions
+  // in 3 dimensions, you can see this as
+  // frob. norm or 3D line dist
+
+  int num_samples = ceil(total_delta_norm / resolution_);
+  num_samples = num_samples > 20 ? 20 : num_samples;
+  // TODO(jim) expose this arb. param 20 to yaml?
 
   if (compute_gradients) {
     gx = 0.0;
@@ -461,20 +476,36 @@ double Stomp2DTest::evaluateCostPathWithGradients(
   }
 
   double cost = 0.0;
+  Eigen::MatrixXd interp_sample = Eigen::MatrixXd::Zero(num_dimensions_, 1);
   for (int i = 0; i < num_samples; ++i) {
     // leave out the last one to avoid double counting
+    // explanation:
+    // final i will be (num_samples - 1) / num_samples
+    // so does not evaluate cost @ exactly x2/y2
+    // aka this_param_sample
+    // that will be done in the next call to interpPathSeg
+    // on i = 0
 
-    // 2020-01-01 semantics:
-    // sample the discretized 2D space
-    // with resolution (dx/y) / num_samples
-    double d = (static_cast<double>(i) /
+    // note that this technique
+    // means we DO interp across the dim numerical space
+    // evenly, but for some dims where delta[dim] / resolution > num_samples
+    // we are UNDERsampling (actual resolution > resolution_)
+    // and other dims where delta[dim] / resolution  < num_samples
+    // we are OVERsampling (actual resolution < resolution_)
+    // but we do do so evenly
+
+    double interp_ratio = (static_cast<double>(i) /
       static_cast<double>(num_samples));
-    double x = x1 + d * dx;
-    double y = y1 + d * dy;
+
+    interp_sample = (*last_param_sample) + interp_ratio * delta;    
+    // for (int d = 0; d < num_dimensions_; ++d) {
+    //   interp_sample(d, 0) = (*last_param_sample)(d, 0) +\
+    //     interp_ratio * delta(d, 0);
+    // }
 
     double temp_gx = 0.0, temp_gy = 0.0;
-    cost += evaluateCostWithGradients(
-      x, y,
+    cost += evaluateStateCostWithGradients(
+      &interp_sample,
       vx, vy,
       compute_gradients,
       ax, ay,
@@ -482,7 +513,10 @@ double Stomp2DTest::evaluateCostPathWithGradients(
     gx += temp_gx;
     gy += temp_gy;
   }
+
   cost /= num_samples;
+  // normalize it by num_samples
+  // so semantically same for different sized paths
 
   if (compute_gradients) {
     gx /= num_samples;
@@ -558,11 +592,14 @@ void Stomp2DTest::visualizeCostFunction() {
   double min_cost = std::numeric_limits<double>::max();
   double max_cost = std::numeric_limits<double>::min();
 
+  Eigen::MatrixXd param_sample = Eigen::MatrixXd::Zero(num_dimensions_, 1);
   for (int i = 0; i < num_x; ++i) {
     double x = i*resolution_;
     for (int j = 0; j < num_y; ++j) {
       double y = j*resolution_;
-      double cost = evaluateMapCost(x, y);
+      param_sample(0, 0) = x;
+      param_sample(1, 0) = y;
+      double cost = evaluateStateCostStrategy1(&param_sample);
       if (cost > max_cost)
         max_cost = cost;
       if (cost < min_cost)
@@ -618,25 +655,28 @@ void Stomp2DTest::visualizeTrajectory(
 
   // marker.colors.resize(num_time_steps_);
 
+  Eigen::MatrixXd param_sample = Eigen::MatrixXd::Zero(num_dimensions_, 1);
   for (int t = 0; t < num_time_steps_; ++t) {
     marker.points[t].x = rollout.parameters_noise_[0][t];
     marker.points[t].y = rollout.parameters_noise_[1][t];
 
-    double cost = evaluateMapCost(
-      rollout.parameters_noise_[0][t],
-      rollout.parameters_noise_[1][t]);
+    param_sample(0, 0) = rollout.parameters_noise_[0][t];
+    param_sample(1, 0) = rollout.parameters_noise_[1][t];
+    double cost = evaluateStateCostStrategy1(&param_sample);
 
-    // marker.points[t].x = (
-    //   cost - cost_viz_scaling_const_) * cost_viz_scaling_factor_;
-    // marker.points[t].x += 0.005;
-
+    // 2020-01-02 show noisy path timestep
+    // cost as z value for now
+    // note that this applies for the optimal path as well
+    // it is rendered below 'noiseless', qualitatively looks
+    // in-plane costs are so low
     marker.points[t].z = cost;
+    marker.points[t].z += 0.005;
+    // spacing offset to render out-of-plane
   }
 
   marker.pose.position.x = 0;
   marker.pose.position.y = 0;
   marker.pose.position.z = 0;
-
   marker.pose.orientation.x = 0.0;
   marker.pose.orientation.y = 0.0;
   marker.pose.orientation.z = 0.0;

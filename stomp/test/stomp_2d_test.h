@@ -134,27 +134,34 @@ class Stomp2DTest: public Task,
     bool noiseless,
     int id);
 
-  double evaluateMapCost(
-    double x, double y) const;
-  void evaluateMapGradients(
-    double x, double y,
+  double interpPathSegmentAndEvaluateStateCost(
+    Eigen::MatrixXd* last_param_sample,
+    Eigen::MatrixXd* this_param_sample,
+    double vx, double vy,
+    bool compute_gradients,
+    double ax, double ay,
     double& gx, double& gy) const;
+  // calls evaluateStateCostWithGradients
+
+  double evaluateStateCostWithGradients(
+    Eigen::MatrixXd* param_sample,
+    double vx, double vy,
+    bool compute_gradients,
+    double ax, double ay,
+    double& gx, double& gy) const;
+  // calls evaluateStateCostStrategy*, evaluateStateCostGradientStrategy1
+  // TODO(jim) use func ptr?
+
+  double evaluateStateCostStrategy1(
+    Eigen::MatrixXd* param_sample) const;
+  void evaluateStateCostGradientStrategy1(
+    Eigen::MatrixXd* param_sample,
+    double& gx, double& gy) const;
+
   double evaluateCost(
-    double x, double y,
+    Eigen::MatrixXd* param_sample,
     double vx, double vy) const;
-  double evaluateCostWithGradients(
-    double x, double y,
-    double vx, double vy,
-    bool compute_gradients,
-    double ax, double ay,
-    double& gx, double& gy) const;
-  double evaluateCostPathWithGradients(
-    double x1, double y1,
-    double x2, double y2,
-    double vx, double vy,
-    bool compute_gradients,
-    double ax, double ay,
-    double& gx, double& gy) const;
+  // calls evaluateStateCostWithGradients
 };
 
 }  // namespace stomp
