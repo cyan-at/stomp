@@ -12,7 +12,7 @@
 struct Obstacle {
   std::vector<double> center_;
   std::vector<double> radius_;
-  bool boolean_;
+  bool inadmissible_;
 };
 
 int main(int argc, char ** argv) {

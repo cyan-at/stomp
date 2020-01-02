@@ -228,7 +228,7 @@ void Stomp2DTest::readParameters() {
     Obstacle o;
     STOMP_VERIFY(getParam(obstacles_xml[i], "center", o.center_));
     STOMP_VERIFY(getParam(obstacles_xml[i], "radius", o.radius_));
-    STOMP_VERIFY(getParam(obstacles_xml[i], "boolean", o.boolean_));
+    STOMP_VERIFY(getParam(obstacles_xml[i], "boolean", o.inadmissible_));
     obstacles_.push_back(o);
   }
 
@@ -339,14 +339,29 @@ double Stomp2DTest::evaluateCost(
 }
 
 double Stomp2DTest::evaluateMapCost(double x, double y) const {
+
   double cost = 0.0;
+
   for (unsigned int o = 0; o < obstacles_.size(); ++o) {
-    double dx = (x - obstacles_[o].center_[0])/obstacles_[o].radius_[0];
-    double dy = (y - obstacles_[o].center_[1])/obstacles_[o].radius_[1];
+    double dx = (x - obstacles_[o].center_[0])
+      / obstacles_[o].radius_[0];
+    double dy = (y - obstacles_[o].center_[1])
+      / obstacles_[o].radius_[1];
 
     double dist = dx * dx + dy * dy;
 
-    if (obstacles_[o].boolean_) {
+    // 2020-01-01 semantics:
+    // if within the radius from the center
+    // of a 'True' obstacle
+    // cost is ticked to 1
+    // 'inadmissible'
+
+    // if within the radius from the center
+    // of a 'False' obstacle
+    // if cost is 0.0
+    // it is raised to a partial
+    // 'admissible' obstacle
+    if (obstacles_[o].inadmissible_) {
       if (dist < 1.0) {
         // cost += 1.0;
         if (cost < 1.0)
@@ -355,8 +370,8 @@ double Stomp2DTest::evaluateMapCost(double x, double y) const {
     } else {
       if (dist < 1.0) {
         // cost += 1.0 - dist;
-        if (cost < 1.0-dist)
-          cost = 1.0-dist;
+        if (cost < 1.0 - dist)
+          cost = 1.0 - dist;
       }
     }
   }
@@ -650,7 +665,7 @@ bool convert<stomp::Obstacle>::decode(
     throw stomp::ExceptionYaml(
       "stomp::Obstacle requires boolean component");
   }
-  o.boolean_ = node["boolean"].as<bool>();
+  o.inadmissible_ = node["boolean"].as<bool>();
 
   return true;
 }

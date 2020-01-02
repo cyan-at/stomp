@@ -26,7 +26,7 @@ class Obstacle {
  public:
   std::vector<double> center_;
   std::vector<double> radius_;
-  bool boolean_;
+  bool inadmissible_;
 
   Obstacle() {}
 };
@@ -131,21 +131,31 @@ class Stomp2DTest: public Task,
   void writeCostFunction();
   void visualizeCostFunction();
   void visualizeTrajectory(
-    Rollout& rollout, bool noiseless, int id);
+    Rollout& rollout,
+    bool noiseless,
+    int id);
 
-  double evaluateMapCost(double x, double y) const;
-  void evaluateMapGradients(double x, double y, double& gx, double& gy) const;
-  double evaluateCost(double x, double y, double vx, double vy) const;
+  double evaluateMapCost(
+    double x, double y) const;
+  void evaluateMapGradients(
+    double x, double y,
+    double& gx, double& gy) const;
+  double evaluateCost(
+    double x, double y,
+    double vx, double vy) const;
   double evaluateCostWithGradients(
-    double x, double y, double vx, double vy,
+    double x, double y,
+    double vx, double vy,
     bool compute_gradients,
-    double ax, double ay, double& gx, double& gy) const;
-  double evaluateCostPath(
-    double x1, double y1, double x2, double y2, double vx, double vy) const;
+    double ax, double ay,
+    double& gx, double& gy) const;
   double evaluateCostPathWithGradients(
-    double x1, double y1, double x2, double y2, double vx, double vy,
+    double x1, double y1,
+    double x2, double y2,
+    double vx, double vy,
     bool compute_gradients,
-    double ax, double ay, double& gx, double& gy) const;
+    double ax, double ay,
+    double& gx, double& gy) const;
 };
 
 }  // namespace stomp
