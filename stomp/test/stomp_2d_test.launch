@@ -9,7 +9,8 @@
     type="test_stomp2d"
     output="screen"
     launch-prefix="$(arg launch_prefix)"
-    args="$(arg yaml_file)">
+    args="$(arg yaml_file)"
+    required="true">
   </node>
 </launch>
 
