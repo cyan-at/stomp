@@ -432,11 +432,11 @@ public:
     if (!ros::ok())
       exit(0);
     for (int i=0; i<samples_link_positions_x_.cols(); ++i)
-      visualizeTrajectory(samples_link_positions_x_, samples_link_positions_y_, false, i, double(sample_probabilities_(i)/2.0 + 0.5));
+      visualizeTrajectoryStrategy1(samples_link_positions_x_, samples_link_positions_y_, false, i, double(sample_probabilities_(i)/2.0 + 0.5));
     //ros::Duration(1.0).sleep();
   }
 
-  void visualizeTrajectory(Eigen::MatrixXd& link_positions_x, Eigen::MatrixXd& link_positions_y, bool noiseless, int id, double prob)
+  void visualizeTrajectoryStrategy1(Eigen::MatrixXd& link_positions_x, Eigen::MatrixXd& link_positions_y, bool noiseless, int id, double prob)
   {
     visualization_msgs::Marker marker;
     marker.header.frame_id = "BASE";

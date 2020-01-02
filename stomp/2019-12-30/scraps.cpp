@@ -216,3 +216,84 @@ void readParameters();
 //   // 2019-12-31 TODO(jim) consolidate starting(ending)_point / num_dimensions
 //   // to infer num_dimensions_ from size of starting_point etc.
 // }
+
+##################################################################
+
+    if (use_covariance_matrix_adaptation_) {
+      // printf("use_covariance_matrix_adaptation_ is True\n");
+      // true CMA method
+      // adapted_covariances_[d] = Eigen::MatrixXd::Zero(num_time_steps_, num_time_steps_);
+      // for (int r=0; r<num_rollouts_; ++r)
+      // {
+      //   adapted_covariances_[d] += rollouts_[r].full_probabilities_[d] *
+      //       rollouts_[r].noise_[d] * rollouts_[r].noise_[d].transpose();
+      // }
+
+      // ROS_INFO_STREAM("Covariance for dimension " << d << " = " << adapted_covariances_[d]);
+      // adapted_stddevs_[d] = 1.0;
+      // adapted_covariance_inverse_[d] = adapted_covariances_[d].fullPivLu().inverse();
+      // noise_generators_[d] = MultivariateGaussian(VectorXd::Zero(num_parameters_[d]), adapted_covariances_[d]);
+
+      // one-dimensional CMA-ish
+      // double var = 0.0;
+      // for (int r=0; r<num_rollouts_; ++r)
+      // {
+      //   double dist = rollouts_[r].noise_[d].transpose() *
+      //       adapted_covariance_inverse_[d] * rollouts_[r].noise_[d];
+      //   var += rollouts_[r].full_probabilities_[d] * dist;
+      //   //printf("Rollout %d, dist = %f", r, dist);
+      // }
+      // var /= num_time_steps_;
+      // adapted_stddevs_[d] = 0.8 * adapted_stddevs_[d] + 0.2 * sqrt(var);
+      // ROS_INFO("Dimension %d: new stddev = %f", d, adapted_stddevs_[d]);
+
+      double frob_stddev = 0.0, numer = 0.0, denom = 0.0;
+
+      /*
+      // true CMA method + minimization of frobenius norm
+      adapted_covariances_[d] = Eigen::MatrixXd::Zero(num_time_steps_, num_time_steps_);
+      for (int r=0; r<num_rollouts_; ++r)
+      {
+        adapted_covariances_[d] += rollouts_[r].full_probabilities_[d] *
+            rollouts_[r].noise_[d] * rollouts_[r].noise_[d].transpose();
+      }
+
+      // minimize frobenius norm of diff between a_c and std_dev^2 * inv_control_cost
+      numer = 0.0;
+      denom = 0.0;
+      for (int i=0; i<num_time_steps_; ++i)
+      {
+        for (int j=0; j<num_time_steps_; ++j)
+        {
+          numer += adapted_covariances_[d](i,j) * inv_control_costs_[d](i,j);
+          denom += inv_control_costs_[d](i,j) * inv_control_costs_[d](i,j);
+        }
+      }
+      frob_stddev = sqrt(numer/denom);
+      double prev_frob_stddev = frob_stddev;
+      */
+
+##################################################################
+
+double Stomp2DTest::evaluateCost(
+  Eigen::MatrixXd* param_sample,
+  double vx, double vy) const {
+  double ax = 0.0, ay = 0.0, gx = 0.0, gy = 0.0;
+  return evaluateStateCostWithGradients(
+    param_sample,
+    vx, vy,
+    false,
+    ax, ay,
+    gx, gy);
+}
+
+
+  double evaluateCost(
+    Eigen::MatrixXd* param_sample,
+    double vx, double vy) const;
+  // calls evaluateStateCostWithGradients
+
+
+##################################################################
+
+

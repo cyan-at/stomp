@@ -128,11 +128,6 @@ class Stomp2DTest: public Task,
   std::vector<Eigen::VectorXd> initial_trajectory_;
 
   void writeCostFunction();
-  void visualizeCostFunction();
-  void visualizeTrajectory(
-    Rollout& rollout,
-    bool noiseless,
-    int id);
 
   double interpPathSegmentAndEvaluateStateCost(
     Eigen::MatrixXd* last_param_sample,
@@ -150,7 +145,22 @@ class Stomp2DTest: public Task,
     double ax, double ay,
     double& gx, double& gy) const;
   // calls evaluateStateCostStrategy*, evaluateStateCostGradientStrategy1
-  // TODO(jim) use func ptr?
+
+  ////////////////////////////////// STRATEGY FUNCPTR DEFINITIONS
+
+  double (Stomp2DTest::*evaluateStateCostStrategy)(
+    Eigen::MatrixXd* param_sample) const;
+
+  void (Stomp2DTest::*visualizeCostFunctionStrategy)();
+
+  void (Stomp2DTest::*visualizeTrajectoryStrategy)(
+    Rollout& rollout,
+    bool noiseless,
+    int id);
+
+  ////////////////////////////////// STRATEGY SETS
+
+  //////////////////////////////////
 
   double evaluateStateCostStrategy1(
     Eigen::MatrixXd* param_sample) const;
@@ -158,10 +168,22 @@ class Stomp2DTest: public Task,
     Eigen::MatrixXd* param_sample,
     double& gx, double& gy) const;
 
-  double evaluateCost(
-    Eigen::MatrixXd* param_sample,
-    double vx, double vy) const;
-  // calls evaluateStateCostWithGradients
+  void visualizeCostFunctionStrategy1();
+  void visualizeTrajectoryStrategy1(
+    Rollout& rollout,
+    bool noiseless,
+    int id);
+
+  //////////////////////////////////
+
+  double evaluateStateCostStrategy2(
+    Eigen::MatrixXd* param_sample) const;
+
+  void visualizeCostFunctionStrategy2();
+  void visualizeTrajectoryStrategy2(
+    Rollout& rollout,
+    bool noiseless,
+    int id);
 };
 
 }  // namespace stomp

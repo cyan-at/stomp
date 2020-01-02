@@ -87,8 +87,16 @@ int Stomp2DTest::run() {
 
   if (save_cost_function_)
     writeCostFunction();
-  if (publish_to_rviz_)
-    visualizeCostFunction();
+  if (publish_to_rviz_) {
+    int timeout = 5;
+    int counter = 0;
+    while (rviz_pub_.getNumSubscribers() == 0 && counter < timeout) {
+      ROS_WARN("Waiting for rviz to connect...");
+      ros::Duration(1.0).sleep();
+      ++counter;
+    }
+    (this->*visualizeCostFunctionStrategy)();
+  }
 
   ros::NodeHandle stomp_node_handle(node_handle_, "stomp");
 
@@ -171,10 +179,10 @@ int Stomp2DTest::run() {
       }
       prev_iter_stamp = ros::Time::now();
 
-      visualizeTrajectory(noiseless_rollout, true, 0);
+      (this->*visualizeTrajectoryStrategy)(noiseless_rollout, true, 0);
       if (!use_chomp_) {
         for (size_t j=0; j < rollouts.size(); ++j) {
-          visualizeTrajectory(rollouts[j], false, j+1);
+          (this->*visualizeTrajectoryStrategy)(rollouts[j], false, j+1);
         }
       }
     }
@@ -213,7 +221,7 @@ void Stomp2DTest::writeCostFunction() {
 
       param_sample(0, 0) = x;
       param_sample(1, 0) = y;
-      double cost = evaluateStateCostStrategy1(&param_sample);
+      double cost = (this->*evaluateStateCostStrategy)(&param_sample);
       fprintf(f, "%lf\t%lf\t%lf\n", x, y, cost);
     }
   }
@@ -323,132 +331,6 @@ bool Stomp2DTest::execute(const std::vector<Eigen::VectorXd>& parameters,
   return true;
 }
 
-double Stomp2DTest::evaluateCost(
-  Eigen::MatrixXd* param_sample,
-  double vx, double vy) const {
-  double ax = 0.0, ay = 0.0, gx = 0.0, gy = 0.0;
-  return evaluateStateCostWithGradients(
-    param_sample,
-    vx, vy,
-    false,
-    ax, ay,
-    gx, gy);
-}
-
-double Stomp2DTest::evaluateStateCostStrategy1(
-  Eigen::MatrixXd* param_sample) const {
-  double cost = 0.0;
-
-  double x = (*param_sample)(0, 0);
-  double y = (*param_sample)(1, 0);
-
-  for (unsigned int o = 0; o < obstacles_.size(); ++o) {
-    double dx = (x - obstacles_[o].center_[0])
-      / obstacles_[o].radius_[0];
-    double dy = (y - obstacles_[o].center_[1])
-      / obstacles_[o].radius_[1];
-
-    double dist = dx * dx + dy * dy;
-
-    // 2020-01-01 semantics:
-    // if within the radius from the center
-    // of a 'True' obstacle
-    // cost is ticked to 1
-    // 'inadmissible'
-
-    // if within the radius from the center
-    // of a 'False' obstacle
-    // if cost is 0.0
-    // it is raised to a partial
-    // 'admissible' obstacle
-    if (obstacles_[o].inadmissible_) {
-      if (dist < 1.0) {
-        // cost += 1.0;
-        if (cost < 1.0)
-          cost = 1.0;
-      }
-    } else {
-      if (dist < 1.0) {
-        // cost += 1.0 - dist;
-        if (cost < 1.0 - dist)
-          cost = 1.0 - dist;
-      }
-    }
-  }
-  // TODO(jim) generalize this to 3D obstacles
-
-  // joint limits
-  // TODO(jim) generalize this to n dimensions
-  // parsed from YAML file
-  // as well as cost for exceeding
-  const double joint_limit_cost = 100.0;
-  if (x < 0.0) {
-    cost += joint_limit_cost * -x;
-  }
-  if (x > 1.0) {
-    cost += joint_limit_cost * (x - 1.0);
-  }
-  if (y < 0.0) {
-    cost += joint_limit_cost * -y;
-  }
-  if (y > 1.0) {
-    cost += joint_limit_cost * (y - 1.0);
-  }
-
-  return cost;
-}
-
-void Stomp2DTest::evaluateStateCostGradientStrategy1(
-  Eigen::MatrixXd* param_sample,
-  double& gx, double& gy) const {
-  // average map cost / map area (2 * resolution big)
-  // gx = (evaluateStateCostStrategy1(x + resolution_, y)
-  //   - evaluateStateCostStrategy1(x - resolution_, y)) / (2 * resolution_);
-  // gy = (evaluateStateCostStrategy1(x, y + resolution_)
-  //   - evaluateStateCostStrategy1(x, y - resolution_)) / (2 * resolution_);
-}
-
-double Stomp2DTest::evaluateStateCostWithGradients(
-  Eigen::MatrixXd* param_sample,
-  double vx, double vy,
-  bool compute_gradients,
-  double ax, double ay,
-  double& gx, double& gy) const {
-  double cost = evaluateStateCostStrategy1(param_sample) * movement_dt_;
-
-  double vel_mag = sqrt(vx*vx + vy*vy);
-
-  /*
-  if (compute_gradients) {
-    double map_gx = 0.0, map_gy = 0.0;
-    evaluateStateCostGradientStrategy1(x, y, map_gx, map_gy);
-
-    map_gx *= movement_dt_;
-    map_gy *= movement_dt_;
-
-    Eigen::Vector2d vel;
-    Eigen::Vector2d norm_vel;
-    vel(0) = vx;
-    vel(1) = vy;
-    norm_vel = vel.normalized();
-    Eigen::Matrix2d orth_proj =
-      Eigen::Matrix2d::Identity() - norm_vel*norm_vel.transpose();
-    Eigen::Vector2d acc;
-    acc(0) = ax;
-    acc(1) = ay;
-    Eigen::Vector2d curvature = (1.0/vel.squaredNorm()) * orth_proj * acc;
-    Eigen::Vector2d grad;
-    grad(0) = map_gx;
-    grad(1) = map_gy;
-    Eigen::Vector2d new_grad = vel_mag * (orth_proj*grad - cost*curvature);
-    gx = new_grad(0);
-    gy = new_grad(1);
-  }
-  */
-
-  return cost * vel_mag;
-}
-
 double Stomp2DTest::interpPathSegmentAndEvaluateStateCost(
   Eigen::MatrixXd* last_param_sample,
   Eigen::MatrixXd* this_param_sample,
@@ -526,6 +408,47 @@ double Stomp2DTest::interpPathSegmentAndEvaluateStateCost(
   return cost;
 }
 
+double Stomp2DTest::evaluateStateCostWithGradients(
+  Eigen::MatrixXd* param_sample,
+  double vx, double vy,
+  bool compute_gradients,
+  double ax, double ay,
+  double& gx, double& gy) const {
+  double cost = (this->*evaluateStateCostStrategy)(param_sample) * movement_dt_;
+
+  double vel_mag = sqrt(vx*vx + vy*vy);
+
+  /*
+  if (compute_gradients) {
+    double map_gx = 0.0, map_gy = 0.0;
+    evaluateStateCostGradientStrategy1(x, y, map_gx, map_gy);
+
+    map_gx *= movement_dt_;
+    map_gy *= movement_dt_;
+
+    Eigen::Vector2d vel;
+    Eigen::Vector2d norm_vel;
+    vel(0) = vx;
+    vel(1) = vy;
+    norm_vel = vel.normalized();
+    Eigen::Matrix2d orth_proj =
+      Eigen::Matrix2d::Identity() - norm_vel*norm_vel.transpose();
+    Eigen::Vector2d acc;
+    acc(0) = ax;
+    acc(1) = ay;
+    Eigen::Vector2d curvature = (1.0/vel.squaredNorm()) * orth_proj * acc;
+    Eigen::Vector2d grad;
+    grad(0) = map_gx;
+    grad(1) = map_gy;
+    Eigen::Vector2d new_grad = vel_mag * (orth_proj*grad - cost*curvature);
+    gx = new_grad(0);
+    gy = new_grad(1);
+  }
+  */
+
+  return cost * vel_mag;
+}
+
 bool Stomp2DTest::filter(std::vector<Eigen::VectorXd>& parameters,
   int thread_id) const {
   return false;
@@ -561,7 +484,85 @@ double Stomp2DTest::getControlCostWeight() {
   return control_cost_weight_;
 }
 
-void Stomp2DTest::visualizeCostFunction() {
+////////////////////////////////// STRATEGY SETS
+
+//////////////////////////////////
+
+double Stomp2DTest::evaluateStateCostStrategy1(
+  Eigen::MatrixXd* param_sample) const {
+  double cost = 0.0;
+
+  double x = (*param_sample)(0, 0);
+  double y = (*param_sample)(1, 0);
+
+  for (unsigned int o = 0; o < obstacles_.size(); ++o) {
+    double dx = (x - obstacles_[o].center_[0])
+      / obstacles_[o].radius_[0];
+    double dy = (y - obstacles_[o].center_[1])
+      / obstacles_[o].radius_[1];
+
+    double dist = dx * dx + dy * dy;
+
+    // 2020-01-01 semantics:
+    // if within the radius from the center
+    // of a 'True' obstacle
+    // cost is ticked to 1
+    // 'inadmissible'
+
+    // if within the radius from the center
+    // of a 'False' obstacle
+    // if cost is 0.0
+    // it is raised to a partial
+    // 'admissible' obstacle
+    if (obstacles_[o].inadmissible_) {
+      if (dist < 1.0) {
+        // cost += 1.0;
+        if (cost < 1.0)
+          cost = 1.0;
+      }
+    } else {
+      if (dist < 1.0) {
+        // cost += 1.0 - dist;
+        if (cost < 1.0 - dist)
+          cost = 1.0 - dist;
+      }
+    }
+  }
+  // TODO(jim) generalize this to 3D obstacles
+
+  // joint limits
+  // TODO(jim) generalize this to n dimensions
+  // parsed from YAML file
+  // as well as cost for exceeding
+  // imposing a 'joint' limit voxel of 1x1 fro 0-1
+  const double joint_limit_cost = 100.0;
+  if (x < 0.0) {
+    cost += joint_limit_cost * -x;
+  }
+  if (x > 1.0) {
+    cost += joint_limit_cost * (x - 1.0);
+  }
+  if (y < 0.0) {
+    cost += joint_limit_cost * -y;
+  }
+  if (y > 1.0) {
+    cost += joint_limit_cost * (y - 1.0);
+  }
+
+  return cost;
+}
+
+void Stomp2DTest::evaluateStateCostGradientStrategy1(
+  Eigen::MatrixXd* param_sample,
+  double& gx, double& gy) const {
+  // average map cost / map area (2 * resolution big)
+  // gx = (evaluateStateCostStrategy1(x + resolution_, y)
+  //   - evaluateStateCostStrategy1(x - resolution_, y)) / (2 * resolution_);
+  // gy = (evaluateStateCostStrategy1(x, y + resolution_)
+  //   - evaluateStateCostStrategy1(x, y - resolution_)) / (2 * resolution_);
+}
+
+void Stomp2DTest::visualizeCostFunctionStrategy1() {
   visualization_msgs::Marker marker;
 
   int num_x = lrint(1.0 / resolution_) + 1;
@@ -597,9 +598,10 @@ void Stomp2DTest::visualizeCostFunction() {
     double x = i*resolution_;
     for (int j = 0; j < num_y; ++j) {
       double y = j*resolution_;
+
       param_sample(0, 0) = x;
       param_sample(1, 0) = y;
-      double cost = evaluateStateCostStrategy1(&param_sample);
+      double cost = (this->*evaluateStateCostStrategy)(&param_sample);
       if (cost > max_cost)
         max_cost = cost;
       if (cost < min_cost)
@@ -628,21 +630,10 @@ void Stomp2DTest::visualizeCostFunction() {
     // marker.points[i].x = x;
   }
 
-
-  cost_viz_scaling_const_ = min_cost;
-  cost_viz_scaling_factor_ = 0.1 /(max_cost - min_cost);
-
-  int timeout = 5;
-  int counter = 0;
-  while (rviz_pub_.getNumSubscribers() == 0 && counter < timeout) {
-    ROS_WARN("Waiting for rviz to connect...");
-    ros::Duration(1.0).sleep();
-    ++counter;
-  }
   rviz_pub_.publish(marker);
 }
 
-void Stomp2DTest::visualizeTrajectory(
+void Stomp2DTest::visualizeTrajectoryStrategy1(
   Rollout& rollout, bool noiseless, int id) {
   visualization_msgs::Marker marker;
   marker.header.frame_id = "BASE";
@@ -662,7 +653,7 @@ void Stomp2DTest::visualizeTrajectory(
 
     param_sample(0, 0) = rollout.parameters_noise_[0][t];
     param_sample(1, 0) = rollout.parameters_noise_[1][t];
-    double cost = evaluateStateCostStrategy1(&param_sample);
+    double cost = (this->*evaluateStateCostStrategy)(&param_sample);
 
     // 2020-01-02 show noisy path timestep
     // cost as z value for now
@@ -699,7 +690,222 @@ void Stomp2DTest::visualizeTrajectory(
   rviz_pub_.publish(marker);
 }
 
-} /* namespace stomp */
+//////////////////////////////////
+
+double Stomp2DTest::evaluateStateCostStrategy2(
+  Eigen::MatrixXd* param_sample) const {
+  double cost = 0.0;
+
+  double x = (*param_sample)(0, 0);
+  double y = (*param_sample)(1, 0);
+  double z = (*param_sample)(2, 0);
+
+  for (unsigned int o = 0; o < obstacles_.size(); ++o) {
+    double dx = (x - obstacles_[o].center_[0])
+      / obstacles_[o].radius_[0];
+    double dy = (y - obstacles_[o].center_[1])
+      / obstacles_[o].radius_[1];
+    double dz = (z - obstacles_[o].center_[2])
+      / obstacles_[o].radius_[2];
+    double dist = sqrt(dx * dx + dy * dy + dz * dz);
+
+    // 2020-01-01 semantics:
+    // if within the radius from the center
+    // of a 'True' obstacle
+    // cost is ticked to 1
+    // 'inadmissible'
+
+    // if within the radius from the center
+    // of a 'False' obstacle
+    // if cost is 0.0
+    // it is raised to a partial
+    // 'admissible' obstacle
+    if (obstacles_[o].inadmissible_) {
+      if (dist < 1.0) {
+        // cost += 1.0;
+        if (cost < 1.0)
+          cost = 1.0;
+      }
+    } else {
+      if (dist < 1.0) {
+        // cost += 1.0 - dist;
+        if (cost < 1.0 - dist)
+          cost = 1.0 - dist;
+      }
+    }
+  }
+  // TODO(jim) generalize this to 3D obstacles
+
+  // joint limits
+  // TODO(jim) generalize this to n dimensions
+  // parsed from YAML file
+  // as well as cost for exceeding
+  // imposing a 'joint' limit voxel of 1x1x1 fro 0-1
+  const double joint_limit_cost = 100.0;
+  if (x < 0.0) {
+    cost += joint_limit_cost * -x;
+  }
+  if (x > 1.0) {
+    cost += joint_limit_cost * (x - 1.0);
+  }
+  if (y < 0.0) {
+    cost += joint_limit_cost * -y;
+  }
+  if (y > 1.0) {
+    cost += joint_limit_cost * (y - 1.0);
+  }
+  if (z < 0.0) {
+    cost += joint_limit_cost * -z;
+  }
+  if (z > 1.0) {
+    cost += joint_limit_cost * (z - 1.0);
+  }
+
+  return cost;
+}
+
+void Stomp2DTest::visualizeCostFunctionStrategy2() {
+  for (int obstacle_i = 0; obstacle_i < obstacles_.size(); ++obstacle_i) {
+    visualization_msgs::Marker marker;
+
+    marker.id = obstacle_i;
+    marker.ns = "cost";
+    marker.header.frame_id = "BASE";
+    marker.header.stamp = ros::Time::now();
+
+    marker.type = visualization_msgs::Marker::SPHERE;
+    marker.action = visualization_msgs::Marker::ADD;
+
+    marker.pose.position.x = obstacles_[obstacle_i].center_[0];
+    marker.pose.position.y = obstacles_[obstacle_i].center_[1];
+    marker.pose.position.z = obstacles_[obstacle_i].center_[2];
+
+    marker.pose.orientation.x = 0.0;
+    marker.pose.orientation.y = 0.0;
+    marker.pose.orientation.z = 0.0;
+    marker.pose.orientation.w = 1.0;
+
+    marker.scale.x = obstacles_[obstacle_i].radius_[0];
+    marker.scale.y = obstacles_[obstacle_i].radius_[1];
+    marker.scale.z = obstacles_[obstacle_i].radius_[2];
+
+    marker.color.a = 1.0; // Don't forget to set the alpha!
+    marker.color.r = 0.0;
+    marker.color.g = 1.0;
+    marker.color.b = 0.0;
+
+
+    // marker.scale.x = resolution_*2.0;
+    // marker.scale.y = resolution_*2.0;
+    // marker.scale.z = resolution_*2.0;
+
+    // marker.pose.position.x = 0.0;
+    // marker.pose.position.y = 0.0;
+    // marker.pose.position.z = 0.0;
+    // marker.pose.orientation.w = 1.0;
+    // marker.pose.orientation.x = 0.0;
+    // marker.pose.orientation.y = 0.0;
+    // marker.pose.orientation.z = 0.0;
+    // marker.points.reserve(num_x*num_y);
+    // marker.colors.reserve(num_x*num_y);
+
+    // std_msgs::ColorRGBA color;
+    // geometry_msgs::Point point;
+
+    // double min_cost = std::numeric_limits<double>::max();
+    // double max_cost = std::numeric_limits<double>::min();
+
+    // Eigen::MatrixXd param_sample = Eigen::MatrixXd::Zero(num_dimensions_, 1);
+    // for (int i = 0; i < num_x; ++i) {
+    //   double x = i*resolution_;
+    //   for (int j = 0; j < num_y; ++j) {
+    //     double y = j*resolution_;
+
+    //     param_sample(0, 0) = x;
+    //     param_sample(1, 0) = y;
+    //     double cost = (this->*evaluateStateCostStrategy)(&param_sample);
+    //     if (cost > max_cost)
+    //       max_cost = cost;
+    //     if (cost < min_cost)
+    //       min_cost = cost;
+    //     point.x = x;
+    //     point.y = y;
+    //     point.z = cost;  // temp storage
+    //     marker.points.push_back(point);
+    //   }
+    // }
+
+    // // now loop and set colors based on the scaling
+    // for (size_t i = 0; i < marker.points.size(); ++i) {
+    //   double cost = marker.points[i].z;
+    //   double scaled_cost = (cost - min_cost)/(max_cost - min_cost);
+    //   color.r = scaled_cost;
+    //   color.b = 0.5 * (1.0 - scaled_cost);
+    //   color.g = 0.0;
+    //   color.a = 1.0;
+    //   marker.colors.push_back(color);
+    //   marker.points[i].z = 0.1 * scaled_cost;
+
+    //   // interchange axes x and z
+    //   // double x = marker.points[i].z;
+    //   // marker.points[i].z = marker.points[i].x;
+    //   // marker.points[i].x = x;
+    // }
+
+
+    // cost_viz_scaling_const_ = min_cost;
+    // cost_viz_scaling_factor_ = 0.1 /(max_cost - min_cost);
+
+    rviz_pub_.publish(marker);
+  }
+}
+
+void Stomp2DTest::visualizeTrajectoryStrategy2(
+  Rollout& rollout, bool noiseless, int id) {
+  visualization_msgs::Marker marker;
+  marker.header.frame_id = "BASE";
+  marker.header.stamp = ros::Time::now();
+  marker.ns = "trajectory";
+  marker.id = id;
+  marker.type = visualization_msgs::Marker::LINE_STRIP;
+  marker.action = visualization_msgs::Marker::ADD;
+  marker.points.resize(num_time_steps_);
+
+  // marker.colors.resize(num_time_steps_);
+
+  Eigen::MatrixXd param_sample = Eigen::MatrixXd::Zero(num_dimensions_, 1);
+  for (int t = 0; t < num_time_steps_; ++t) {
+    marker.points[t].x = rollout.parameters_noise_[0][t];
+    marker.points[t].y = rollout.parameters_noise_[1][t];
+    marker.points[t].z = rollout.parameters_noise_[2][t];
+  }
+
+  marker.pose.position.x = 0;
+  marker.pose.position.y = 0;
+  marker.pose.position.z = 0;
+  marker.pose.orientation.x = 0.0;
+  marker.pose.orientation.y = 0.0;
+  marker.pose.orientation.z = 0.0;
+  marker.pose.orientation.w = 1.0;
+
+  if (noiseless) {
+    marker.scale.x = 0.01;
+    marker.color.a = 1.0;
+    marker.color.r = 0.0;
+    marker.color.g = 1.0;
+    marker.color.b = 0.0;
+  } else {
+    marker.scale.x = 0.002;
+    marker.color.a = 0.7;
+    marker.color.r = 0.2;
+    marker.color.g = 0.5;
+    marker.color.b = 0.5;
+  }
+
+  rviz_pub_.publish(marker);
+}
+
+}  // namespace stomp
 
 namespace YAML {
 
@@ -849,6 +1055,12 @@ bool convert<stomp::Stomp2DTest>::decode(
       "stomp::Stomp2DTest requires stomp component");
   }
   s.stomp = node["stomp"].as<stomp::STOMP>();
+
+  /* load func ptrs TODO(jim, maybe) tie this to yaml? */
+  s.evaluateStateCostStrategy = &stomp::Stomp2DTest::evaluateStateCostStrategy2;
+  s.visualizeCostFunctionStrategy = &stomp::Stomp2DTest::visualizeCostFunctionStrategy2;
+  s.visualizeTrajectoryStrategy = &stomp::Stomp2DTest::visualizeTrajectoryStrategy2;
+
   return true;
 }
 
