@@ -127,7 +127,6 @@ class Stomp2DTest: public Task,
 
   std::vector<Eigen::VectorXd> initial_trajectory_;
 
-  void readParameters();
   void writeCostFunction();
   void visualizeCostFunction();
   void visualizeTrajectory(

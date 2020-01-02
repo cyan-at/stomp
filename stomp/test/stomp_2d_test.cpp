@@ -35,7 +35,6 @@ int Stomp2DTest::run() {
     "visualization", 100, false);
   srand(time(NULL));
   resolution_ = 0.002;
-  // readParameters();
   mkdir(output_dir_.c_str(), 0755);
 
   std::stringstream stddev_filename, cost_filename;
@@ -214,55 +213,6 @@ void Stomp2DTest::writeCostFunction() {
     }
   }
   fclose(f);
-}
-
-void Stomp2DTest::readParameters() {
-  YAML::Node config = YAML::LoadFile(
-    "/home/jim/Dev/jim/stomp/stomp/test/stomp_2d_test.yaml");
-
-  // WARNING, TODO: no error checking here!!!
-  obstacles_.clear();
-  XmlRpc::XmlRpcValue obstacles_xml;
-  STOMP_VERIFY(node_handle_.getParam("cost_function", obstacles_xml));
-  for (int i = 0; i < obstacles_xml.size(); ++i) {
-    Obstacle o;
-    STOMP_VERIFY(getParam(obstacles_xml[i], "center", o.center_));
-    STOMP_VERIFY(getParam(obstacles_xml[i], "radius", o.radius_));
-    STOMP_VERIFY(getParam(obstacles_xml[i], "boolean", o.inadmissible_));
-    obstacles_.push_back(o);
-  }
-
-  // STOMP_VERIFY(node_handle_.getParam("num_iterations", num_iterations_));
-  // if (config["num_iterations"]) {
-  //   num_iterations_ = config["num_iterations"].as<int>();
-  //   std::cout << "num_iterations found!!! " << num_iterations_ << "\n";
-  // }
-
-  STOMP_VERIFY(node_handle_.getParam("num_time_steps", num_time_steps_));
-  STOMP_VERIFY(node_handle_.getParam("movement_duration", movement_duration_));
-  STOMP_VERIFY(node_handle_.getParam(
-    "control_cost_weight", control_cost_weight_));
-  STOMP_VERIFY(node_handle_.getParam("output_dir", output_dir_));
-  STOMP_VERIFY(node_handle_.getParam("use_chomp", use_chomp_));
-  STOMP_VERIFY(node_handle_.getParam(
-    "save_noisy_trajectories", save_noisy_trajectories_));
-  STOMP_VERIFY(node_handle_.getParam(
-    "save_noiseless_trajectories", save_noiseless_trajectories_));
-  STOMP_VERIFY(node_handle_.getParam(
-    "save_cost_function", save_cost_function_));
-  STOMP_VERIFY(node_handle_.getParam(
-    "publish_to_rviz", publish_to_rviz_));
-  STOMP_VERIFY(node_handle_.getParam(
-    "delay_per_iteration", delay_per_iteration_));
-
-  STOMP_VERIFY(readDoubleArray(node_handle_,
-    "starting_point", starting_point_));
-  STOMP_VERIFY(readDoubleArray(node_handle_,
-    "ending_point", ending_point_));
-  STOMP_VERIFY(node_handle_.getParam(
-    "num_dimensions", num_dimensions_));
-  // 2019-12-31 TODO(jim) consolidate starting(ending)_point / num_dimensions
-  // to infer num_dimensions_ from size of starting_point etc.
 }
 
 bool Stomp2DTest::execute(const std::vector<Eigen::VectorXd>& parameters,
