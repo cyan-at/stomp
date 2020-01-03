@@ -12,6 +12,7 @@
 #include <iomanip>
 #include <cmath>
 #include <limits>
+#include <vector>
 
 #define ZERO_THRESH 1e-8
 #define kNumJointsInArm 6
@@ -23,12 +24,12 @@ namespace stomp {
 
 class DHJoint {
  public:
-  double d1, d4, d5, d6;
-  double a2, a3;
+  double d, r_a, alpha;
+  std::vector<double> limits;
 
   Hom a_matrix;
 
-  DHJoint() {}
+  DHJoint() : d(0.0), r_a(0.0), alpha(0.0) {}
 
   void calc_fk(double th) {}
   // updates a_matrix
@@ -397,5 +398,21 @@ int analytic_ur_fk(DHJoint* params) {
 }
 
 }  // namespace stomp
+
+namespace YAML {
+
+template <>
+struct convert<stomp::DHJoint> {
+  static bool decode(const YAML::Node& node,
+    stomp::DHJoint& o);  // NOLINT(runtime/references)
+};
+
+// template <>
+// struct convert<stomp::StompTest> {
+//   static bool decode(const YAML::Node& node,
+//     stomp::StompTest& s);  // NOLINT(runtime/references)
+// };
+
+}  // namespace YAML
 
 #endif  // SRC_STOMP_INCLUDE_STOMP_UR_KIN_H_

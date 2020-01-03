@@ -29,6 +29,7 @@ include_directories(
 add_library(stomp
   # src/chomp.cpp
   src/stomp_utils.cpp
+  src/ur_kin.cpp
   src/covariant_movement_primitive.cpp
   src/policy_improvement.cpp
   src/stomp.cpp
@@ -58,6 +59,10 @@ endif()
 
 #################################################
 
+add_executable(test_ur_kin
+  test/test_ur_kin.cpp
+)
+
 add_executable(test_stomp2d
   test/stomp_2d_test.cpp
 )
@@ -85,6 +90,8 @@ add_definitions(${EIGEN3_DEFINITIONS})
 #add_definitions(-DEIGEN_NO_DEBUG -DNDEBUG)
 
 target_link_libraries(test_stomp2d stomp)
+
+target_link_libraries(test_ur_kin stomp)
 
 # target_link_libraries(test_cmp stomp)
 # target_link_libraries(stomp_2d_00 stomp ${catkin_LIBRARIES} ${OpenMP_CXX_FLAGS})

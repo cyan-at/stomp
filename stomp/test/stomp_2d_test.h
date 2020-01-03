@@ -184,6 +184,17 @@ class StompTest: public Task,
     Rollout& rollout,
     bool noiseless,
     int id);
+
+  //////////////////////////////////
+
+  double evaluateStateCostStrategy3(
+    Eigen::MatrixXd* param_sample) const;
+
+  void visualizeCostFunctionStrategy3();
+  void visualizeTrajectoryStrategy3(
+    Rollout& rollout,
+    bool noiseless,
+    int id);
 };
 
 }  // namespace stomp

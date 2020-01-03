@@ -22,13 +22,13 @@
 namespace stomp {
 
 int StompTest::run() {
-  stomp::DHJoint ur10_params;
-  ur10_params.d1 = 0.1273;
-  ur10_params.d4 = 0.163941;
-  ur10_params.d5 = 0.1157;
-  ur10_params.d6 = 0.0922;
-  ur10_params.a2 = -0.612;
-  ur10_params.a3 = -0.5723;
+  // stomp::DHJoint ur10_params;
+  // ur10_params.d1 = 0.1273;
+  // ur10_params.d4 = 0.163941;
+  // ur10_params.d5 = 0.1157;
+  // ur10_params.d6 = 0.0922;
+  // ur10_params.a2 = -0.612;
+  // ur10_params.a3 = -0.5723;
 
   // initialize rviz publisher
   rviz_pub_ = node_handle_.advertise<visualization_msgs::Marker>(
@@ -903,6 +903,27 @@ void StompTest::visualizeTrajectoryStrategy2(
   }
 
   rviz_pub_.publish(marker);
+}
+
+//////////////////////////////////
+
+double StompTest::evaluateStateCostStrategy3(
+  Eigen::MatrixXd* param_sample) const {
+  // param_sample is a joint space q
+
+  // for map cost, fk it into tool-space, calculate obstacle costs
+
+  // for joint costs, impose joint limits (defined in YAML)
+  return 0.0;
+}
+
+void StompTest::visualizeCostFunctionStrategy3() {
+}
+
+void StompTest::visualizeTrajectoryStrategy3(
+  Rollout& rollout,
+  bool noiseless,
+  int id) {
 }
 
 }  // namespace stomp
