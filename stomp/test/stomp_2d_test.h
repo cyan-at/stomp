@@ -122,8 +122,8 @@ class StompTest: public Task,
   Eigen::MatrixXd vel_diff_matrix_;
   Eigen::MatrixXd acc_diff_matrix_;
 
-  std::vector<double> starting_point_;
-  std::vector<double> ending_point_;
+  std::vector<double> params_s_;
+  std::vector<double> params_e_;
 
   std::vector<Eigen::VectorXd> initial_trajectory_;
 

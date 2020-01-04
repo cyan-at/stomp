@@ -63,10 +63,17 @@ stomp:
   # minimum value the noise can reach
   noise_min_stddev: [0.01, 0.01, 0.01, 0.01, 0.01, 0.01]
 
-# starting_point: [0.2, 0.2, 0.1, 0.0, 0.0, 0.0]
-# ending_point: [0.9, 0.9, 0.8, 0.0, 0.0, 0.0]
-starting_point: [-1.600700000038163, -1.9155698697205885, -2.2622583920110717, -0.5602717382692681, 1.5950999999990207, -0.03100000003816117]
-ending_point: [-1.600699999957711, -1.575831842379153, -2.0886449927238395, -1.0736231648959809, 1.5951000000010893, -0.030999999957711744]
+# define params to start at and params to end at
+# initial trajectory I assume to be numerical linear
+# interpolation for every dim
+# spatial meaning / state cost depends on
+# evaluateStateCostStrategy
+# visualizeCostFunctionStrategy
+# visualizeTrajectoryStrategy
+# params_s: [0.2, 0.2, 0.1, 0.0, 0.0, 0.0]
+# params_e: [0.9, 0.9, 0.8, 0.0, 0.0, 0.0]
+params_s: [-1.600700000038163, -1.9155698697205885, -2.2622583920110717, -0.5602717382692681, 1.5950999999990207, -0.03100000003816117]
+params_e: [-1.600699999957711, -1.575831842379153, -2.0886449927238395, -1.0736231648959809, 1.5951000000010893, -0.030999999957711744]
 
 # cost function / obstacle defintion
 obstacles:

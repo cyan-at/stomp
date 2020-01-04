@@ -51,10 +51,10 @@ int StompTest::run() {
   for (int d = 0; d < num_dimensions_; ++d) {
     // apply starting point and ending point here
     initial_trajectory[d].head(TRAJECTORY_PADDING) =
-      starting_point_[d]*Eigen::VectorXd::Ones(
+      params_s_[d]*Eigen::VectorXd::Ones(
       TRAJECTORY_PADDING);
     initial_trajectory[d].tail(TRAJECTORY_PADDING) =
-      ending_point_[d]*Eigen::VectorXd::Ones(
+      params_e_[d]*Eigen::VectorXd::Ones(
       TRAJECTORY_PADDING);
 
     derivative_costs[d].col(STOMP_ACCELERATION) = Eigen::VectorXd::Ones(
@@ -1128,24 +1128,24 @@ bool convert<stomp::StompTest>::decode(
   }
   s.delay_per_iteration_ = node["delay_per_iteration"].as<double>();
 
-  if (node["starting_point"] == NULL) {
+  if (node["params_s"] == NULL) {
     throw stomp::ExceptionYaml(
-      "stomp::StompTest requires starting_point component");
+      "stomp::StompTest requires params_s component");
   }
-  s.starting_point_ = node["starting_point"].as<std::vector<double>>();
-  if (node["ending_point"] == NULL) {
+  s.params_s_ = node["params_s"].as<std::vector<double>>();
+  if (node["params_e"] == NULL) {
     throw stomp::ExceptionYaml(
-      "stomp::StompTest requires ending_point component");
+      "stomp::StompTest requires params_e component");
   }
-  s.ending_point_ = node["ending_point"].as<std::vector<double>>();
+  s.params_e_ = node["params_e"].as<std::vector<double>>();
 
-  if (s.starting_point_.size() == 0 || s.ending_point_.size() == 0) {
+  if (s.params_s_.size() == 0 || s.params_e_.size() == 0) {
     throw stomp::ExceptionYaml(
-      "stomp::StompTest found starting_point or ending_point empty");
+      "stomp::StompTest found params_s or params_e empty");
   }
-  if (s.starting_point_.size() != s.ending_point_.size()) {
+  if (s.params_s_.size() != s.params_e_.size()) {
     throw stomp::ExceptionYaml(
-      "stomp::StompTest found mismatch of starting_point, ending_point size");
+      "stomp::StompTest found mismatch of params_s, params_e size");
   }
   // if (node["num_dimensions"] == NULL) {
   //   throw stomp::ExceptionYaml(
@@ -1153,8 +1153,8 @@ bool convert<stomp::StompTest>::decode(
   // }
   // s.num_dimensions_ = node["num_dimensions"].as<int>();
   // 2019-12-31 TODO(jim) consolidate starting(ending)_point / num_dimensions
-  // to infer num_dimensions_ from size of starting_point etc.
-  s.num_dimensions_ = s.starting_point_.size();
+  // to infer num_dimensions_ from size of params_s etc.
+  s.num_dimensions_ = s.params_s_.size();
 
   /* load obstacles */
   if (node["obstacles"] == NULL) {

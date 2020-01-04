@@ -208,13 +208,13 @@ void readParameters();
 //     "delay_per_iteration", delay_per_iteration_));
 
 //   STOMP_VERIFY(readDoubleArray(node_handle_,
-//     "starting_point", starting_point_));
+//     "params_s", params_s_));
 //   STOMP_VERIFY(readDoubleArray(node_handle_,
-//     "ending_point", ending_point_));
+//     "params_e", params_e_));
 //   STOMP_VERIFY(node_handle_.getParam(
 //     "num_dimensions", num_dimensions_));
 //   // 2019-12-31 TODO(jim) consolidate starting(ending)_point / num_dimensions
-//   // to infer num_dimensions_ from size of starting_point etc.
+//   // to infer num_dimensions_ from size of params_s etc.
 // }
 
 ##################################################################
