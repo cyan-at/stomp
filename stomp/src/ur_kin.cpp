@@ -4,6 +4,25 @@
 
 namespace stomp {
 
+void DHJoint::calc_fk(double q) {
+  // TODO(jim) rewrite q to Eigen vector
+  sq_ = sin(q);
+  cq_ = cos(q);
+
+  a_matrix(0, 0) = cq_;
+  a_matrix(0, 1) = -sq_ * calpha_;
+  a_matrix(0, 2) = sq_ * salpha_;
+  a_matrix(0, 3) = r_a * cq_;
+
+  a_matrix(1, 0) = sq_;
+  a_matrix(1, 1) = cq_ * calpha_;
+  a_matrix(1, 2) = -cq_ * salpha_;
+  a_matrix(1, 3) = r_a * sq_;
+
+  a_matrix(2, 1) = salpha_;
+  a_matrix(2, 2) = calpha_;
+  a_matrix(2, 3) = d;
+}
 
 }  // namespace stomp
 
@@ -32,13 +51,16 @@ bool convert<stomp::DHJoint>::decode(
     throw stomp::ExceptionYaml(
       "stomp::DHJoint requires alpha component");
   }
-  joint.alpha = node["alpha"].as<double>();
+  joint.set_alpha(node["alpha"].as<double>());
 
   if (node["limits"] == NULL) {
     throw stomp::ExceptionYaml(
       "stomp::DHJoint requires limits component");
   }
   joint.limits = node["limits"].as<std::vector<double>>();
+
+  // default joint angle
+  joint.calc_fk(0.0);
 
   return true;
 }

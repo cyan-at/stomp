@@ -23,15 +23,27 @@
 namespace stomp {
 
 class DHJoint {
+ private:
+  // used during calc_fk
+  double sq_, cq_, salpha_, calpha_;
+
  public:
   double d, r_a, alpha;
   std::vector<double> limits;
 
   Hom a_matrix;
 
-  DHJoint() : d(0.0), r_a(0.0), alpha(0.0) {}
+  DHJoint() : d(0.0), r_a(0.0), alpha(0.0) {
+    a_matrix = Eigen::MatrixXd::Identity(4, 4);
+  }
 
-  void calc_fk(double th) {}
+  void set_alpha(double new_alpha) {
+    alpha = new_alpha;
+    salpha_ = sin(new_alpha);
+    calpha_ = cos(new_alpha);
+  }
+
+  void calc_fk(double q);
   // updates a_matrix
 };
 
@@ -393,7 +405,24 @@ int analytic_ur_ik(DHJoint* params,
 }
 */
 
-int analytic_ur_fk(DHJoint* params) {
+int analytic_ur_fk(
+  std::vector<DHJoint>* joints,
+  std::vector<double>* qs,
+  Hom* fk_hom) {
+  assert(qs->size() == joints->size());
+  if (qs->size() != joints->size()) {
+    printf("analytic_ur_fk::mismatch between qs size and joints size!\n");
+    throw stomp::Exception("analytic_ur_fk::mismatch!");
+  }
+
+  *fk_hom = Eigen::MatrixXd::Identity(4, 4);
+  for (int i = 0; i < joints->size(); ++i) {
+    (*joints)[i].calc_fk((*qs)[i]);
+
+    (*fk_hom) = (*fk_hom) * (*joints)[i].a_matrix;
+    // do not use noalias, you need to use temporary
+  }
+
   return 0;
 }
 

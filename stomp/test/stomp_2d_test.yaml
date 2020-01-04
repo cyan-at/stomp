@@ -14,13 +14,13 @@ delay_per_iteration: 0.04
 num_iterations: 100
 save_cost_function: true
 
-ur:
-  # ur10e
+robot:
   dh_joints:
+  # ur10e
   -
     d: 0.1807
     r_a: 0.0
-    alpha: 0.5723
+    alpha: 1.5707963
     limits: [-6.28, 6.28]
   -
     d: 0.0
@@ -35,12 +35,12 @@ ur:
   -
     d: 0.17415
     r_a: 0.0
-    alpha: 0.5723
+    alpha: 1.5707963
     limits: [-6.28, 6.28]
   -
     d: 0.11985
     r_a: 0.0
-    alpha: -0.5723
+    alpha: -1.5707963
     limits: [-6.28, 6.28]
   -
     d: 0.11655

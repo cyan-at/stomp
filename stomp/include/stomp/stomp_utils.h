@@ -115,6 +115,14 @@ class ExceptionYaml : public std::runtime_error {
   ~ExceptionYaml() throw() {}
 };
 
+class Exception : public std::runtime_error {
+ public:
+  explicit Exception(const std::string& msg) : std::runtime_error(msg) {}
+
+  // TODO(jim) understand throwing from destructor
+  ~Exception() throw() {}
+};
+
 namespace yaml {
 
 YAML::Node LoadFile(const std::string& filename);
