@@ -337,7 +337,7 @@ double StompTest::interpPathSegmentAndEvaluateStateCost(
   double vx, double vy,
   bool compute_gradients,
   double ax, double ay,
-  double& gx, double& gy) const {
+  double& gx, double& gy) {
 
   // compute norm, get num_samples by resolution_
   Eigen::MatrixXd delta = this_param_sample->col(0) - last_param_sample->col(0);
@@ -413,7 +413,7 @@ double StompTest::evaluateStateCostWithGradients(
   double vx, double vy,
   bool compute_gradients,
   double ax, double ay,
-  double& gx, double& gy) const {
+  double& gx, double& gy) {
   double cost = (this->*evaluateStateCostStrategy)(param_sample) * movement_dt_;
 
   double vel_mag = sqrt(vx*vx + vy*vy);
@@ -489,7 +489,7 @@ double StompTest::getControlCostWeight() {
 //////////////////////////////////
 
 double StompTest::evaluateStateCostStrategy1(
-  Eigen::MatrixXd* param_sample) const {
+  Eigen::MatrixXd* param_sample) {
   double cost = 0.0;
 
   double x = (*param_sample)(0, 0);
@@ -554,7 +554,7 @@ double StompTest::evaluateStateCostStrategy1(
 
 void StompTest::evaluateStateCostGradientStrategy1(
   Eigen::MatrixXd* param_sample,
-  double& gx, double& gy) const {
+  double& gx, double& gy) {
   // average map cost / map area (2 * resolution big)
   // gx = (evaluateStateCostStrategy1(x + resolution_, y)
   //   - evaluateStateCostStrategy1(x - resolution_, y)) / (2 * resolution_);
@@ -693,7 +693,7 @@ void StompTest::visualizeTrajectoryStrategy1(
 //////////////////////////////////
 
 double StompTest::evaluateStateCostStrategy2(
-  Eigen::MatrixXd* param_sample) const {
+  Eigen::MatrixXd* param_sample) {
   double cost = 0.0;
 
   double x = (*param_sample)(0, 0);
@@ -734,7 +734,6 @@ double StompTest::evaluateStateCostStrategy2(
       }
     }
   }
-  // TODO(jim) generalize this to 3D obstacles
 
   // joint limits
   // TODO(jim) generalize this to n dimensions
@@ -908,10 +907,60 @@ void StompTest::visualizeTrajectoryStrategy2(
 //////////////////////////////////
 
 double StompTest::evaluateStateCostStrategy3(
-  Eigen::MatrixXd* param_sample) const {
+  Eigen::MatrixXd* param_sample) {
   // param_sample is a joint space q
+  double cost = 0.0;
 
   // for map cost, fk it into tool-space, calculate obstacle costs
+  analytic_ur_fk_2(&joints, param_sample, &fk_hom);
+
+  for (unsigned int o = 0; o < obstacles_.size(); ++o) {
+    double dx = (fk_hom(0, 3) - obstacles_[o].center_[0])
+      / obstacles_[o].radius_[0];
+    double dy = (fk_hom(1, 3) - obstacles_[o].center_[1])
+      / obstacles_[o].radius_[1];
+    double dz = (fk_hom(2, 3) - obstacles_[o].center_[2])
+      / obstacles_[o].radius_[2];
+    double dist = sqrt(dx * dx + dy * dy + dz * dz);
+
+    // 2020-01-01 semantics:
+    // if within the radius from the center
+    // of a 'True' obstacle
+    // cost is ticked to 1
+    // 'inadmissible'
+
+    // if within the radius from the center
+    // of a 'False' obstacle
+    // if cost is 0.0
+    // it is raised to a partial
+    // 'admissible' obstacle
+    if (obstacles_[o].inadmissible_) {
+      if (dist < 1.0) {
+        // cost += 1.0;
+        if (cost < 1.0)
+          cost = 1.0;
+      }
+    } else {
+      if (dist < 1.0) {
+        // cost += 1.0 - dist;
+        if (cost < 1.0 - dist)
+          cost = 1.0 - dist;
+      }
+    }
+  }
+
+  const double joint_limit_cost = 100.0;
+  for (int i = 0; i < joints.size(); ++i) {
+    // lower limit, upper limit
+    if ((*param_sample)(i, 0) < joints[i].limits[0]) {
+      cost += joint_limit_cost * abs((*param_sample)(i, 0) - joints[i].limits[0]);
+    }
+
+    // lower limit, upper limit
+    if ((*param_sample)(i, 0) > joints[i].limits[1]) {
+      cost += joint_limit_cost * abs((*param_sample)(i, 0) - joints[i].limits[1]);
+    }
+  }
 
   // for joint costs, impose joint limits (defined in YAML)
   return 0.0;
@@ -924,6 +973,49 @@ void StompTest::visualizeTrajectoryStrategy3(
   Rollout& rollout,
   bool noiseless,
   int id) {
+  visualization_msgs::Marker marker;
+  marker.header.frame_id = "BASE";
+  marker.header.stamp = ros::Time::now();
+  marker.ns = "trajectory";
+  marker.id = id;
+  marker.type = visualization_msgs::Marker::LINE_STRIP;
+  marker.action = visualization_msgs::Marker::ADD;
+  marker.points.resize(num_time_steps_);
+
+  // marker.colors.resize(num_time_steps_);
+
+  Eigen::MatrixXd param_sample = Eigen::MatrixXd::Zero(num_dimensions_, 1);
+
+  // for (int t = 0; t < num_time_steps_; ++t) {
+  // analytic_ur_fk_2(&joints, param_sample, &fk_hom);
+  //   marker.points[t].x = rollout.parameters_noise_[0][t];
+  //   marker.points[t].y = rollout.parameters_noise_[1][t];
+  //   marker.points[t].z = rollout.parameters_noise_[2][t];
+  // }
+
+  // marker.pose.position.x = 0;
+  // marker.pose.position.y = 0;
+  // marker.pose.position.z = 0;
+  // marker.pose.orientation.x = 0.0;
+  // marker.pose.orientation.y = 0.0;
+  // marker.pose.orientation.z = 0.0;
+  // marker.pose.orientation.w = 1.0;
+
+  // if (noiseless) {
+  //   marker.scale.x = 0.01;
+  //   marker.color.a = 1.0;
+  //   marker.color.r = 0.0;
+  //   marker.color.g = 1.0;
+  //   marker.color.b = 0.0;
+  // } else {
+  //   marker.scale.x = 0.002;
+  //   marker.color.a = 0.7;
+  //   marker.color.r = 0.2;
+  //   marker.color.g = 0.5;
+  //   marker.color.b = 0.5;
+  // }
+
+  rviz_pub_.publish(marker);
 }
 
 }  // namespace stomp
@@ -1076,6 +1168,23 @@ bool convert<stomp::StompTest>::decode(
       "stomp::StompTest requires stomp component");
   }
   s.stomp = node["stomp"].as<stomp::STOMP>();
+
+  // 2020-01-03 adding DH joints for fk
+  if (node["robot"] == NULL) {
+    printf("no robot defined in yaml, ending\n");
+    return 1;
+  }
+  if (node["robot"]["dh_joints"] == NULL) {
+    printf("no dh_joints defined in yaml, ending\n");
+    return 1;
+  }
+  std::vector<stomp::DHJoint> joints;
+  for (unsigned int i = 0;
+    i < node["robot"]["dh_joints"].size(); i++) {
+    s.joints.push_back(
+      node["robot"]["dh_joints"][i].as<stomp::DHJoint>());
+  }
+  printf("parsed out %d joints\n", s.joints.size());
 
   /* load func ptrs TODO(jim, maybe) tie this to yaml? */
   s.evaluateStateCostStrategy = &stomp::StompTest::evaluateStateCostStrategy2;

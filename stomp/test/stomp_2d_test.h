@@ -135,7 +135,7 @@ class StompTest: public Task,
     double vx, double vy,
     bool compute_gradients,
     double ax, double ay,
-    double& gx, double& gy) const;
+    double& gx, double& gy);
   // calls evaluateStateCostWithGradients
 
   double evaluateStateCostWithGradients(
@@ -143,13 +143,13 @@ class StompTest: public Task,
     double vx, double vy,
     bool compute_gradients,
     double ax, double ay,
-    double& gx, double& gy) const;
+    double& gx, double& gy);
   // calls evaluateStateCostStrategy*, evaluateStateCostGradientStrategy1
 
   ////////////////////////////////// STRATEGY FUNCPTR DEFINITIONS
 
   double (StompTest::*evaluateStateCostStrategy)(
-    Eigen::MatrixXd* param_sample) const;
+    Eigen::MatrixXd* param_sample);
 
   void (StompTest::*visualizeCostFunctionStrategy)();
 
@@ -163,10 +163,10 @@ class StompTest: public Task,
   //////////////////////////////////
 
   double evaluateStateCostStrategy1(
-    Eigen::MatrixXd* param_sample) const;
+    Eigen::MatrixXd* param_sample);
   void evaluateStateCostGradientStrategy1(
     Eigen::MatrixXd* param_sample,
-    double& gx, double& gy) const;
+    double& gx, double& gy);
 
   void visualizeCostFunctionStrategy1();
   void visualizeTrajectoryStrategy1(
@@ -177,7 +177,7 @@ class StompTest: public Task,
   //////////////////////////////////
 
   double evaluateStateCostStrategy2(
-    Eigen::MatrixXd* param_sample) const;
+    Eigen::MatrixXd* param_sample);
 
   void visualizeCostFunctionStrategy2();
   void visualizeTrajectoryStrategy2(
@@ -187,8 +187,11 @@ class StompTest: public Task,
 
   //////////////////////////////////
 
+  std::vector<stomp::DHJoint> joints;
+  Hom fk_hom = Eigen::MatrixXd::Identity(4, 4);
+
   double evaluateStateCostStrategy3(
-    Eigen::MatrixXd* param_sample) const;
+    Eigen::MatrixXd* param_sample);
 
   void visualizeCostFunctionStrategy3();
   void visualizeTrajectoryStrategy3(

@@ -426,6 +426,21 @@ int analytic_ur_fk(
   return 0;
 }
 
+int analytic_ur_fk_2(
+  std::vector<DHJoint>* joints,
+  Eigen::MatrixXd* qs,
+  Hom* fk_hom) {
+  *fk_hom = Eigen::MatrixXd::Identity(4, 4);
+  for (int i = 0; i < joints->size(); ++i) {
+    (*joints)[i].calc_fk((*qs)(i, 0));
+
+    (*fk_hom) = (*fk_hom) * (*joints)[i].a_matrix;
+    // do not use noalias, you need to use temporary
+  }
+
+  return 0;
+}
+
 }  // namespace stomp
 
 namespace YAML {
