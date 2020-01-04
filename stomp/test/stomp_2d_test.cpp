@@ -22,14 +22,6 @@
 namespace stomp {
 
 int StompTest::run() {
-  // stomp::DHJoint ur10_params;
-  // ur10_params.d1 = 0.1273;
-  // ur10_params.d4 = 0.163941;
-  // ur10_params.d5 = 0.1157;
-  // ur10_params.d6 = 0.0922;
-  // ur10_params.a2 = -0.612;
-  // ur10_params.a3 = -0.5723;
-
   // initialize rviz publisher
   rviz_pub_ = node_handle_.advertise<visualization_msgs::Marker>(
     "visualization", 100, false);
@@ -984,36 +976,53 @@ void StompTest::visualizeTrajectoryStrategy3(
 
   // marker.colors.resize(num_time_steps_);
 
-  Eigen::MatrixXd param_sample = Eigen::MatrixXd::Zero(num_dimensions_, 1);
+  // Eigen::MatrixXd param_sample =
+  //   Eigen::MatrixXd::Zero(num_dimensions_, 1);
 
-  // for (int t = 0; t < num_time_steps_; ++t) {
-  // analytic_ur_fk_2(&joints, param_sample, &fk_hom);
-  //   marker.points[t].x = rollout.parameters_noise_[0][t];
-  //   marker.points[t].y = rollout.parameters_noise_[1][t];
-  //   marker.points[t].z = rollout.parameters_noise_[2][t];
-  // }
+  for (int t = 0; t < num_time_steps_; ++t) {
+    analytic_ur_fk_3(&joints,
+      &rollout.parameters_noise_, t,
+      // TODO(jim) rewrite parameters_noise_
+      // to eigen matrix
+      &fk_hom);
+    marker.points[t].x = fk_hom(0, 3);
+    marker.points[t].y = fk_hom(1, 3);
+    marker.points[t].z = fk_hom(2, 3);
 
-  // marker.pose.position.x = 0;
-  // marker.pose.position.y = 0;
-  // marker.pose.position.z = 0;
-  // marker.pose.orientation.x = 0.0;
-  // marker.pose.orientation.y = 0.0;
-  // marker.pose.orientation.z = 0.0;
-  // marker.pose.orientation.w = 1.0;
+    /*
+    if (id == 0) {
+      // for the noiseless rollout
+      // one for current trajectory cost
+      // calculation
+      printf("fk_hom xyz: %.3f, %.3f, %.3f\n",
+        fk_hom(0, 3),
+        fk_hom(1, 3),
+        fk_hom(2, 3));
+    }
+    */
+  }
 
-  // if (noiseless) {
-  //   marker.scale.x = 0.01;
-  //   marker.color.a = 1.0;
-  //   marker.color.r = 0.0;
-  //   marker.color.g = 1.0;
-  //   marker.color.b = 0.0;
-  // } else {
-  //   marker.scale.x = 0.002;
-  //   marker.color.a = 0.7;
-  //   marker.color.r = 0.2;
-  //   marker.color.g = 0.5;
-  //   marker.color.b = 0.5;
-  // }
+  marker.pose.position.x = 0;
+  marker.pose.position.y = 0;
+  marker.pose.position.z = 0;
+  marker.pose.orientation.x = 0.0;
+  marker.pose.orientation.y = 0.0;
+  marker.pose.orientation.z = 0.0;
+  marker.pose.orientation.w = 1.0;
+
+  if (noiseless) {
+    marker.scale.x = 0.01;
+    marker.color.a = 1.0;
+    marker.color.r = 0.0;
+    marker.color.g = 1.0;
+    marker.color.b = 0.0;
+  } else {
+    marker.scale.x = 0.002;
+    marker.color.a = 0.7;
+    marker.color.r = 0.2;
+    marker.color.g = 0.5;
+    marker.color.b = 0.5;
+  }
 
   rviz_pub_.publish(marker);
 }
@@ -1187,9 +1196,11 @@ bool convert<stomp::StompTest>::decode(
   printf("parsed out %d joints\n", s.joints.size());
 
   /* load func ptrs TODO(jim, maybe) tie this to yaml? */
-  s.evaluateStateCostStrategy = &stomp::StompTest::evaluateStateCostStrategy2;
-  s.visualizeCostFunctionStrategy = &stomp::StompTest::visualizeCostFunctionStrategy2;
-  s.visualizeTrajectoryStrategy = &stomp::StompTest::visualizeTrajectoryStrategy2;
+  s.evaluateStateCostStrategy = &stomp::StompTest::evaluateStateCostStrategy3;
+  s.visualizeCostFunctionStrategy =
+    &stomp::StompTest::visualizeCostFunctionStrategy3;
+  s.visualizeTrajectoryStrategy =
+    &stomp::StompTest::visualizeTrajectoryStrategy3;
 
   return true;
 }

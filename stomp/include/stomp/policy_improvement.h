@@ -56,7 +56,7 @@ struct Rollout {
     std::vector<Eigen::VectorXd> noise_projected_;
     /**< [num_dimensions] num_parameters */
     std::vector<Eigen::VectorXd> parameters_noise_;
-    /**< [num_dimensions] num_parameters */
+    /**< [num_dimensions] num_parameters/time_steps */
     std::vector<Eigen::VectorXd> parameters_noise_projected_;
     /**< [num_dimensions] num_parameters */
     Eigen::VectorXd state_costs_;
