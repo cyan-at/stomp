@@ -7,12 +7,12 @@ control_cost_weight: 0.0001
 output_dir: stomp_test_6
 # cannot be absolute path otherwise crashes app
 use_chomp: false
-save_noisy_trajectories: true
-save_noiseless_trajectories: true
-publish_to_rviz: true
+save_noisy_trajectories: false
+save_noiseless_trajectories: false
 delay_per_iteration: 0.04
 num_iterations: 100
-save_cost_function: true
+save_cost_function: false
+publish_to_rviz: false
 
 robot:
   dh_joints:
@@ -50,9 +50,9 @@ robot:
 
 stomp:
   # set the three parameters below to the same value for normal operation
-  max_rollouts: 50
-  min_rollouts: 50
-  num_rollouts_per_iteration: 50
+  max_rollouts: 10
+  min_rollouts: 10
+  num_rollouts_per_iteration: 10
   # noise adaptation mode: recommended
   use_noise_adaptation: true
 

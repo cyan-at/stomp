@@ -59,7 +59,6 @@ int StompTest::run() {
 
     derivative_costs[d].col(STOMP_ACCELERATION) = Eigen::VectorXd::Ones(
       num_time_steps_ + 2*TRAJECTORY_PADDING);
-
   }
 
   policy_.reset(new CovariantMovementPrimitive());
@@ -113,6 +112,7 @@ int StompTest::run() {
 
   ros::Time prev_iter_stamp = ros::Time::now();
 
+  const clock_t begin_time = std::clock();
   for (int i = 1; i <= num_iterations_; ++i) {
     std::vector<Rollout> rollouts;
     Rollout noiseless_rollout;
@@ -179,6 +179,9 @@ int StompTest::run() {
       }
     }
   }
+  double runtime_secs = static_cast<double>(
+    std::clock() - begin_time) / CLOCKS_PER_SEC;
+  printf("total runtime_secs %.3f\n", runtime_secs);
 
   fclose(stddev_file);
   fclose(cost_file);
