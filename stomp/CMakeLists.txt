@@ -5,7 +5,10 @@ set(CMAKE_CXX_FLAGS "-std=c++11")
 set(CMAKE_BUILD_TYPE RelWithDebInfo)
 #set(CMAKE_BUILD_TYPE Debug)
 
-find_package(catkin REQUIRED COMPONENTS roscpp)
+find_package(catkin REQUIRED COMPONENTS
+  roscpp
+  std_msgs
+  message_generation)
 # find_package(OpenMP REQUIRED)
 
 find_package(Eigen3 REQUIRED)
@@ -13,6 +16,16 @@ find_package(Eigen3 REQUIRED)
 # pkg_search_module(Eigen3 REQUIRED eigen3)
 
 find_package(yaml-cpp)
+
+add_service_files(
+  FILES
+  HandlePlanStomp.srv
+)
+
+generate_messages(
+  DEPENDENCIES
+  std_msgs
+)
 
 catkin_package(
   INCLUDE_DIRS include
@@ -26,7 +39,7 @@ include_directories(
   ${catkin_INCLUDE_DIRS}
 )
 
-add_library(stomp
+add_library(${PROJECT_NAME}
   # src/chomp.cpp
   src/stomp_utils.cpp
   src/ur_kin.cpp
@@ -37,8 +50,14 @@ add_library(stomp
 # 2019-12-31 wrap debug printfs/couts with preprocessor macro
 # turn off to disable
 # target_compile_definitions(stomp PRIVATE DEBUG_VERBOSE=1)
-target_compile_definitions(stomp PRIVATE DEBUG=1)
-target_compile_definitions(stomp PRIVATE DEBUG_COST=1)
+target_compile_definitions(${PROJECT_NAME} PRIVATE DEBUG=1)
+target_compile_definitions(${PROJECT_NAME} PRIVATE DEBUG_COST=1)
+
+# add this so the action headers that mariokart.h needs get built first
+add_dependencies(
+  ${PROJECT_NAME}
+  ${${PROJECT_NAME}_EXPORTED_TARGETS}
+  ${catkin_EXPORTED_TARGETS})
 
 if (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
   target_link_libraries(
@@ -51,7 +70,8 @@ if (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
     ${catkin_LIBRARIES}
   )
 else()
-  target_link_libraries(stomp
+  target_link_libraries(
+    ${PROJECT_NAME}
     ${catkin_LIBRARIES}
     yaml-cpp
   )
@@ -89,14 +109,14 @@ add_definitions(${EIGEN3_DEFINITIONS})
 # add_definitions(${OpenMP_CXX_FLAGS})
 #add_definitions(-DEIGEN_NO_DEBUG -DNDEBUG)
 
-target_link_libraries(test_stomp2d stomp)
+target_link_libraries(test_stomp2d ${PROJECT_NAME})
 
-target_link_libraries(test_ur_kin stomp)
+target_link_libraries(test_ur_kin ${PROJECT_NAME})
 
 # target_link_libraries(test_cmp stomp)
 # target_link_libraries(stomp_2d_00 stomp ${catkin_LIBRARIES} ${OpenMP_CXX_FLAGS})
 
-target_link_libraries(stomp ${catkin_LIBRARIES})
+target_link_libraries(${PROJECT_NAME} ${catkin_LIBRARIES})
 # target_link_libraries(stomp ${OpenMP_CXX_FLAGS})
 
 #target_link_libraries(test_eigen_perf ${Eigen_LIBRARIES} ${OpenMP_CXX_FLAGS})
