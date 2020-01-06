@@ -23,6 +23,8 @@
 
 #include <boost/enable_shared_from_this.hpp>
 
+#include "stomp/HandlePlanStompSrv.h"
+
 namespace stomp {
 
 class Obstacle {
@@ -148,6 +150,10 @@ class StompTest: public Task,
     double ax, double ay,
     double& gx, double& gy);
   // calls evaluateStateCostStrategy*, evaluateStateCostGradientStrategy1
+
+  bool HandlePlanStomp(
+    HandlePlanStompSrv::Request& req,    // NOLINT(runtime/references)
+    HandlePlanStompSrv::Response& res);  // NOLINT(runtime/references)
 
   ////////////////////////////////// STRATEGY FUNCPTR DEFINITIONS
 

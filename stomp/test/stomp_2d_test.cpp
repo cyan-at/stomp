@@ -22,9 +22,13 @@
 namespace stomp {
 
 int StompTest::run() {
-  // initialize rviz publisher
+  // ros interfaces
+  // TODO(jim) remove these maybe
   rviz_pub_ = node_handle_.advertise<visualization_msgs::Marker>(
     "visualization", 100, false);
+  ros::ServiceServer service = node_handle_.advertiseService(
+    "plan_stomp", &StompTest::HandlePlanStomp, this);
+
   srand(time(NULL));
   resolution_ = 0.002;
   mkdir(output_dir_.c_str(), 0755);
@@ -41,12 +45,13 @@ int StompTest::run() {
     num_rollouts_file = fopen(num_rollouts_filename.str().c_str(), "w");
   }
 
-  std::vector<Eigen::MatrixXd> derivative_costs;
   std::vector<Eigen::VectorXd> initial_trajectory;
-  derivative_costs.resize(num_dimensions_, Eigen::MatrixXd::Zero(
-    num_time_steps_ + 2*TRAJECTORY_PADDING, NUM_DIFF_RULES));
   initial_trajectory.resize(num_dimensions_, Eigen::VectorXd::Zero(
     num_time_steps_ + 2*TRAJECTORY_PADDING));
+
+  std::vector<Eigen::MatrixXd> derivative_costs;
+  derivative_costs.resize(num_dimensions_, Eigen::MatrixXd::Zero(
+    num_time_steps_ + 2*TRAJECTORY_PADDING, NUM_DIFF_RULES));
 
   for (int d = 0; d < num_dimensions_; ++d) {
     // apply starting point and ending point here
@@ -90,7 +95,6 @@ int StompTest::run() {
   }
 
   ros::NodeHandle stomp_node_handle(node_handle_, "stomp");
-
   // stomp_.reset(new stomp::STOMP());
   boost::shared_ptr<stomp::STOMP> stomp_boost_sharedptr(&stomp,
       &stomp::null_deleter<stomp::STOMP>);
