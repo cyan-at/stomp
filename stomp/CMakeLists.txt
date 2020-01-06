@@ -2,8 +2,9 @@ cmake_minimum_required(VERSION 2.8.3)
 project(stomp)
 set(CMAKE_CXX_FLAGS "-std=c++11")
 
-set(CMAKE_BUILD_TYPE RelWithDebInfo)
+# set(CMAKE_BUILD_TYPE RelWithDebInfo)
 #set(CMAKE_BUILD_TYPE Debug)
+set(CMAKE_BUILD_TYPE Release)
 
 find_package(catkin REQUIRED COMPONENTS
   roscpp
@@ -53,7 +54,6 @@ add_library(${PROJECT_NAME}
 target_compile_definitions(${PROJECT_NAME} PRIVATE DEBUG=1)
 target_compile_definitions(${PROJECT_NAME} PRIVATE DEBUG_COST=1)
 
-# add this so the action headers that mariokart.h needs get built first
 add_dependencies(
   ${PROJECT_NAME}
   ${${PROJECT_NAME}_EXPORTED_TARGETS}
