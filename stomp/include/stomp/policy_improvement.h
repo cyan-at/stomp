@@ -48,7 +48,10 @@
 
 namespace stomp {
 
-struct Rollout {
+class Rollout {
+ public:
+    Rollout() {}
+
     std::vector<Eigen::VectorXd> parameters_;
     /**< [num_dimensions] num_parameters */
     std::vector<Eigen::VectorXd> noise_;
