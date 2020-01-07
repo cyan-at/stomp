@@ -123,6 +123,13 @@ class Exception : public std::runtime_error {
   ~Exception() throw() {}
 };
 
+class CfgTrajectory {
+ public:
+  CfgTrajectory() {}
+
+  std::vector<std::vector<double>> cfgs;
+};
+
 namespace yaml {
 
 YAML::Node LoadFile(const std::string& filename);

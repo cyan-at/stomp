@@ -20,6 +20,7 @@
 
 #include <string>
 #include <vector>
+#include <fstream>
 
 #include <boost/enable_shared_from_this.hpp>
 
@@ -167,6 +168,9 @@ class StompTest: public Task,
     bool noiseless,
     int id);
 
+  void (StompTest::*saveTrajectoryStrategy)(
+    std::string* file_abs_path);
+
   ////////////////////////////////// STRATEGY SETS
 
   //////////////////////////////////
@@ -207,6 +211,9 @@ class StompTest: public Task,
     Rollout& rollout,
     bool noiseless,
     int id);
+
+  void saveTrajectoryStrategy3(
+    const char* file_abs_path);
 };
 
 }  // namespace stomp

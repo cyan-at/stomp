@@ -46,12 +46,14 @@ int StompTest::run() {
   }
 
   std::vector<Eigen::VectorXd> initial_trajectory;
-  initial_trajectory.resize(num_dimensions_, Eigen::VectorXd::Zero(
-    num_time_steps_ + 2*TRAJECTORY_PADDING));
+  initial_trajectory.resize(num_dimensions_,
+    Eigen::VectorXd::Zero(num_time_steps_ + 2*TRAJECTORY_PADDING));
 
   std::vector<Eigen::MatrixXd> derivative_costs;
-  derivative_costs.resize(num_dimensions_, Eigen::MatrixXd::Zero(
-    num_time_steps_ + 2*TRAJECTORY_PADDING, NUM_DIFF_RULES));
+  derivative_costs.resize(
+    num_dimensions_,
+    Eigen::MatrixXd::Zero(num_time_steps_ + 2*TRAJECTORY_PADDING,
+      NUM_DIFF_RULES));
 
   for (int d = 0; d < num_dimensions_; ++d) {
     // apply starting point and ending point here
@@ -75,6 +77,7 @@ int StompTest::run() {
     initial_trajectory);
   policy_->setToMinControlCost();
   policy_->getParametersAll(initial_trajectory_);
+
   vel_diff_matrix_ = policy_->getDifferentiationMatrix(
     stomp::STOMP_VELOCITY);
   acc_diff_matrix_ = policy_->getDifferentiationMatrix(
@@ -117,6 +120,8 @@ int StompTest::run() {
   ros::Time prev_iter_stamp = ros::Time::now();
 
   const clock_t begin_time = std::clock();
+
+  double latest_trajectory_cost = 0.0;
   for (int i = 1; i <= num_iterations_; ++i) {
     std::vector<Rollout> rollouts;
     Rollout noiseless_rollout;
@@ -183,6 +188,7 @@ int StompTest::run() {
       }
     }
   }
+
   double runtime_secs = static_cast<double>(
     std::clock() - begin_time) / CLOCKS_PER_SEC;
   printf("total runtime_secs %.3f\n", runtime_secs);
@@ -191,6 +197,9 @@ int StompTest::run() {
   fclose(cost_file);
   if (save_noisy_trajectories_)
     fclose(num_rollouts_file);
+
+  std::string filename = "/home/jim/Desktop/test_emitting.yaml";
+  saveTrajectoryStrategy3(filename.c_str());
 
   stomp_.reset();
   // chomp_.reset();
@@ -269,9 +278,7 @@ bool StompTest::execute(const std::vector<Eigen::VectorXd>& parameters,
     gradients.resize(num_dimensions_,
       Eigen::VectorXd::Zero(num_time_steps_));
   }
-
   vel = (vel_diff_matrix_ * pos.transpose()).transpose();
-
   if (compute_gradients) {
     acc = (acc_diff_matrix_ * pos.transpose()).transpose();
   }
@@ -446,6 +453,21 @@ double StompTest::evaluateStateCostWithGradients(
   */
 
   return cost * vel_mag;
+}
+
+bool StompTest::HandlePlanStomp(
+  HandlePlanStompSrv::Request& req,    // NOLINT(runtime/references)
+  HandlePlanStompSrv::Response& res) {  // NOLINT(runtime/references)
+  printf("StompTest::HandlePlanStomp\n");
+  // std::cout << req.params_s << std::endl;
+
+  printf("all params_s: ");
+  for (int i = 0; i << req.params_s.size(); ++i) {
+    printf("%.3f", req.params_s[i]);
+  }
+  printf("\n");
+
+  return true;
 }
 
 bool StompTest::filter(std::vector<Eigen::VectorXd>& parameters,
@@ -1032,6 +1054,56 @@ void StompTest::visualizeTrajectoryStrategy3(
   }
 
   rviz_pub_.publish(marker);
+}
+
+void StompTest::saveTrajectoryStrategy3(
+  const char* file_abs_path) {
+  YAML::Emitter out;
+
+  Rollout noiseless_rollout;
+  stomp_->getNoiselessRollout(noiseless_rollout);
+
+  out << YAML::BeginMap;
+  out << YAML::Key << "type";
+  out << YAML::Value << "CfgTrajectory";
+
+  ///////////////////////////////////////////// params
+  out << YAML::Key << "params";
+  out << YAML::Value;
+  out << YAML::BeginMap;
+
+  ///////////////////////////////////////////// cfgs
+  out << YAML::Key << "cfgs";
+  out << YAML::Value;
+  out << YAML::BeginSeq;  // all cfgs
+  for (int t = 0; t < num_time_steps_; ++t) {
+    // cfg i
+    out << YAML::BeginSeq;
+    for (int d = 0; d < num_dimensions_; ++d) {
+      out << noiseless_rollout.parameters_noise_[d][t];
+    }
+    out << YAML::EndSeq;
+  }
+  out << YAML::EndSeq;  // all cfgs
+  /////////////////////////////////////////////
+
+  ///////////////////////////////////////////// cfg_times
+  out << YAML::Key << "cfg_times";
+  out << YAML::Value;
+  out << YAML::BeginSeq;  // all cfg_times
+  for (int t = 0; t < num_time_steps_; ++t) {
+    out << t * movement_duration_ / num_time_steps_;
+  }
+  out << YAML::EndSeq;
+  out << YAML::EndMap;  // cfg_times
+  /////////////////////////////////////////////
+
+  out << YAML::EndMap;  // params
+  /////////////////////////////////////////////
+
+  std::ofstream fout(file_abs_path);
+  fout << out.c_str();
+  return;
 }
 
 }  // namespace stomp

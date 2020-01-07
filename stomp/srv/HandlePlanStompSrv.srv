@@ -1,0 +1,3 @@
+float64[] params_s
+float64[] params_e
+# TODO(jim) add req arg to represent point obstacle geometry

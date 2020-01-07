@@ -354,17 +354,14 @@ bool CovariantMovementPrimitive::updateParameters(
   return true;
 }
 
-bool CovariantMovementPrimitive::writeToFile(const std::string abs_file_name)
-{
+bool CovariantMovementPrimitive::writeToFile(const std::string abs_file_name) {
   FILE *f;
   f = fopen(abs_file_name.c_str(), "w");
   if (!f)
     return false;
 
-  for (int i=free_vars_start_index_-1; i<=free_vars_end_index_+1; ++i)
-  {
-    for (int d=0; d<num_dimensions_; ++d)
-    {
+  for (int i=free_vars_start_index_-1; i<=free_vars_end_index_+1; ++i) {
+    for (int d = 0; d < num_dimensions_; ++d) {
       fprintf(f,"%f\t", parameters_all_[d](i));
     }
     fprintf(f,"\n");

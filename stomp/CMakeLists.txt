@@ -20,7 +20,7 @@ find_package(yaml-cpp)
 
 add_service_files(
   FILES
-  HandlePlanStomp.srv
+  HandlePlanStompSrv.srv
 )
 
 generate_messages(
@@ -48,16 +48,17 @@ add_library(${PROJECT_NAME}
   src/policy_improvement.cpp
   src/stomp.cpp
 )
-# 2019-12-31 wrap debug printfs/couts with preprocessor macro
-# turn off to disable
-# target_compile_definitions(stomp PRIVATE DEBUG_VERBOSE=1)
-target_compile_definitions(${PROJECT_NAME} PRIVATE DEBUG=1)
-target_compile_definitions(${PROJECT_NAME} PRIVATE DEBUG_COST=1)
 
 add_dependencies(
   ${PROJECT_NAME}
   ${${PROJECT_NAME}_EXPORTED_TARGETS}
   ${catkin_EXPORTED_TARGETS})
+
+# 2019-12-31 wrap debug printfs/couts with preprocessor macro
+# turn off to disable
+# target_compile_definitions(stomp PRIVATE DEBUG_VERBOSE=1)
+target_compile_definitions(${PROJECT_NAME} PRIVATE DEBUG=1)
+target_compile_definitions(${PROJECT_NAME} PRIVATE DEBUG_COST=1)
 
 if (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
   target_link_libraries(
