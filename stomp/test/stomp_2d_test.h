@@ -43,7 +43,7 @@ class StompTest: public Task,
   StompTest():
     node_handle_("test_stomp2d") {}
 
-  int run();
+  int run(std::vector<std::vector<double>>* obstacle_points);
 
   // functions inherited from Task:
 
@@ -123,7 +123,9 @@ class StompTest: public Task,
   double delay_per_iteration_;
   double cost_viz_scaling_const_;
   double cost_viz_scaling_factor_;
-  std::vector<Obstacle> obstacles_;
+
+  std::vector<Obstacle> collision_geometries_;
+  std::vector<std::vector<double>>* obstacle_points_;
 
   Eigen::MatrixXd vel_diff_matrix_;
   Eigen::MatrixXd acc_diff_matrix_;
@@ -202,6 +204,8 @@ class StompTest: public Task,
 
   std::vector<stomp::DHJoint> joints;
   Hom fk_hom = Eigen::MatrixXd::Identity(4, 4);
+
+  Hom gripper_fixed_hom = Eigen::MatrixXd::Identity(4, 4);
 
   double evaluateStateCostStrategy3(
     Eigen::MatrixXd* param_sample);

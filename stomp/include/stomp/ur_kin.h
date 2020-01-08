@@ -429,13 +429,19 @@ int analytic_ur_fk(
 int analytic_ur_fk_2(
   std::vector<DHJoint>* joints,
   Eigen::MatrixXd* qs,
-  Hom* fk_hom) {
+  Hom* fk_hom,
+  Hom* gripper_fixed_hom = nullptr) {
   *fk_hom = Eigen::MatrixXd::Identity(4, 4);
   for (int i = 0; i < joints->size(); ++i) {
     (*joints)[i].calc_fk((*qs)(i, 0));
 
     (*fk_hom) = (*fk_hom) * (*joints)[i].a_matrix;
     // do not use noalias, you need to use temporary
+  }
+
+  // add joint fixed gripper pole at the end
+  if (gripper_fixed_hom != nullptr) {
+    (*fk_hom) = (*fk_hom) * (*gripper_fixed_hom);
   }
 
   return 0;
@@ -445,13 +451,19 @@ int analytic_ur_fk_3(
   std::vector<DHJoint>* joints,
   std::vector<Eigen::VectorXd>* qs,
   int qs_index,
-  Hom* fk_hom) {
+  Hom* fk_hom,
+  Hom* gripper_fixed_hom = nullptr) {
   *fk_hom = Eigen::MatrixXd::Identity(4, 4);
   for (int i = 0; i < joints->size(); ++i) {
     (*joints)[i].calc_fk((*qs)[i][qs_index]);
 
     (*fk_hom) = (*fk_hom) * (*joints)[i].a_matrix;
     // do not use noalias, you need to use temporary
+  }
+
+  // add joint fixed gripper pole at the end
+  if (gripper_fixed_hom != nullptr) {
+    (*fk_hom) = (*fk_hom) * (*gripper_fixed_hom);
   }
 
   return 0;

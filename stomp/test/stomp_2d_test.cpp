@@ -21,13 +21,20 @@
 
 namespace stomp {
 
-int StompTest::run() {
+int StompTest::run(
+  std::vector<std::vector<double>>* obstacle_points) {
   // ros interfaces
   // TODO(jim) remove these maybe
   rviz_pub_ = node_handle_.advertise<visualization_msgs::Marker>(
     "visualization", 100, false);
   ros::ServiceServer service = node_handle_.advertiseService(
     "plan_stomp", &StompTest::HandlePlanStomp, this);
+
+  obstacle_points_ = obstacle_points;
+
+  // TODO(jim) parse this from YAML
+  gripper_fixed_hom(1, 3) = 0.07;
+  gripper_fixed_hom(2, 3) = 0.43050;
 
   srand(time(NULL));
   resolution_ = 0.002;
@@ -169,16 +176,17 @@ int StompTest::run() {
     }
     // printf("%f\n", noiseless_rollout.total_cost_);
 
-    if (publish_to_rviz_) {
+    // if (publish_to_rviz_) {
+    if (true) {
       // wait until delay_per_iteration
       double delay = 0.0;
-      while (delay < delay_per_iteration_) {
-        delay = (ros::Time::now() - prev_iter_stamp).toSec();
-        if (delay < delay_per_iteration_) {
-          ros::Duration(delay_per_iteration_ - delay).sleep();
-        }
-      }
-      prev_iter_stamp = ros::Time::now();
+      // while (delay < delay_per_iteration_) {
+      //   delay = (ros::Time::now() - prev_iter_stamp).toSec();
+      //   if (delay < delay_per_iteration_) {
+      //     ros::Duration(delay_per_iteration_ - delay).sleep();
+      //   }
+      // }
+      // prev_iter_stamp = ros::Time::now();
 
       (this->*visualizeTrajectoryStrategy)(noiseless_rollout, true, 0);
       if (!use_chomp_) {
@@ -198,7 +206,7 @@ int StompTest::run() {
   if (save_noisy_trajectories_)
     fclose(num_rollouts_file);
 
-  std::string filename = "/home/jim/Desktop/test_emitting.yaml";
+  std::string filename = "/home/jim/Desktop/stomp_output.yaml";
   saveTrajectoryStrategy3(filename.c_str());
 
   stomp_.reset();
@@ -516,11 +524,11 @@ double StompTest::evaluateStateCostStrategy1(
   double x = (*param_sample)(0, 0);
   double y = (*param_sample)(1, 0);
 
-  for (unsigned int o = 0; o < obstacles_.size(); ++o) {
-    double dx = (x - obstacles_[o].center_[0])
-      / obstacles_[o].radius_[0];
-    double dy = (y - obstacles_[o].center_[1])
-      / obstacles_[o].radius_[1];
+  for (unsigned int o = 0; o < collision_geometries_.size(); ++o) {
+    double dx = (x - collision_geometries_[o].center_[0])
+      / collision_geometries_[o].radius_[0];
+    double dy = (y - collision_geometries_[o].center_[1])
+      / collision_geometries_[o].radius_[1];
 
     double dist = dx * dx + dy * dy;
 
@@ -535,7 +543,7 @@ double StompTest::evaluateStateCostStrategy1(
     // if cost is 0.0
     // it is raised to a partial
     // 'admissible' obstacle
-    if (obstacles_[o].inadmissible_) {
+    if (collision_geometries_[o].inadmissible_) {
       if (dist < 1.0) {
         // cost += 1.0;
         if (cost < 1.0)
@@ -721,13 +729,13 @@ double StompTest::evaluateStateCostStrategy2(
   double y = (*param_sample)(1, 0);
   double z = (*param_sample)(2, 0);
 
-  for (unsigned int o = 0; o < obstacles_.size(); ++o) {
-    double dx = (x - obstacles_[o].center_[0])
-      / obstacles_[o].radius_[0];
-    double dy = (y - obstacles_[o].center_[1])
-      / obstacles_[o].radius_[1];
-    double dz = (z - obstacles_[o].center_[2])
-      / obstacles_[o].radius_[2];
+  for (unsigned int o = 0; o < collision_geometries_.size(); ++o) {
+    double dx = (x - collision_geometries_[o].center_[0])
+      / collision_geometries_[o].radius_[0];
+    double dy = (y - collision_geometries_[o].center_[1])
+      / collision_geometries_[o].radius_[1];
+    double dz = (z - collision_geometries_[o].center_[2])
+      / collision_geometries_[o].radius_[2];
     double dist = sqrt(dx * dx + dy * dy + dz * dz);
 
     // 2020-01-01 semantics:
@@ -741,7 +749,7 @@ double StompTest::evaluateStateCostStrategy2(
     // if cost is 0.0
     // it is raised to a partial
     // 'admissible' obstacle
-    if (obstacles_[o].inadmissible_) {
+    if (collision_geometries_[o].inadmissible_) {
       if (dist < 1.0) {
         // cost += 1.0;
         if (cost < 1.0)
@@ -785,7 +793,7 @@ double StompTest::evaluateStateCostStrategy2(
 }
 
 void StompTest::visualizeCostFunctionStrategy2() {
-  for (int obstacle_i = 0; obstacle_i < obstacles_.size(); ++obstacle_i) {
+  for (int obstacle_i = 0; obstacle_i < collision_geometries_.size(); ++obstacle_i) {
     visualization_msgs::Marker marker;
 
     marker.id = obstacle_i;
@@ -796,18 +804,18 @@ void StompTest::visualizeCostFunctionStrategy2() {
     marker.type = visualization_msgs::Marker::SPHERE;
     marker.action = visualization_msgs::Marker::ADD;
 
-    marker.pose.position.x = obstacles_[obstacle_i].center_[0];
-    marker.pose.position.y = obstacles_[obstacle_i].center_[1];
-    marker.pose.position.z = obstacles_[obstacle_i].center_[2];
+    marker.pose.position.x = collision_geometries_[obstacle_i].center_[0];
+    marker.pose.position.y = collision_geometries_[obstacle_i].center_[1];
+    marker.pose.position.z = collision_geometries_[obstacle_i].center_[2];
 
     marker.pose.orientation.x = 0.0;
     marker.pose.orientation.y = 0.0;
     marker.pose.orientation.z = 0.0;
     marker.pose.orientation.w = 1.0;
 
-    marker.scale.x = obstacles_[obstacle_i].radius_[0];
-    marker.scale.y = obstacles_[obstacle_i].radius_[1];
-    marker.scale.z = obstacles_[obstacle_i].radius_[2];
+    marker.scale.x = collision_geometries_[obstacle_i].radius_[0];
+    marker.scale.y = collision_geometries_[obstacle_i].radius_[1];
+    marker.scale.z = collision_geometries_[obstacle_i].radius_[2];
 
     marker.color.a = 1.0; // Don't forget to set the alpha!
     marker.color.r = 0.0;
@@ -933,41 +941,45 @@ double StompTest::evaluateStateCostStrategy3(
   double cost = 0.0;
 
   // for map cost, fk it into tool-space, calculate obstacle costs
-  analytic_ur_fk_2(&joints, param_sample, &fk_hom);
+  analytic_ur_fk_2(&joints, param_sample, &fk_hom,
+    &gripper_fixed_hom);
 
-  for (unsigned int o = 0; o < obstacles_.size(); ++o) {
-    double dx = (fk_hom(0, 3) - obstacles_[o].center_[0])
-      / obstacles_[o].radius_[0];
-    double dy = (fk_hom(1, 3) - obstacles_[o].center_[1])
-      / obstacles_[o].radius_[1];
-    double dz = (fk_hom(2, 3) - obstacles_[o].center_[2])
-      / obstacles_[o].radius_[2];
-    double dist = sqrt(dx * dx + dy * dy + dz * dz);
+  for (unsigned int o = 0; o < collision_geometries_.size(); ++o) {
 
-    // 2020-01-01 semantics:
-    // if within the radius from the center
-    // of a 'True' obstacle
-    // cost is ticked to 1
-    // 'inadmissible'
+    // TODO(jim) add nearest neighbors lookup, fixed size always query n nearest neighbors
+    for (unsigned int j = 0; j < obstacle_points_->size(); ++j) {
 
-    // if within the radius from the center
-    // of a 'False' obstacle
-    // if cost is 0.0
-    // it is raised to a partial
-    // 'admissible' obstacle
-    if (obstacles_[o].inadmissible_) {
-      if (dist < 1.0) {
-        // cost += 1.0;
-        if (cost < 1.0)
-          cost = 1.0;
+      double dx = (fk_hom(0, 3) - obstacle_points_->at(j)[0])
+        / collision_geometries_[o].radius_[0];
+      double dy = (fk_hom(1, 3) - obstacle_points_->at(j)[1])
+        / collision_geometries_[o].radius_[1];
+      double dz = (fk_hom(2, 3) - obstacle_points_->at(j)[2])
+        / collision_geometries_[o].radius_[2];
+      double dist = sqrt(dx * dx + dy * dy + dz * dz);
+
+      // 2020-01-01 semantics:
+      // if within the radius from the center
+      // of a 'True' obstacle
+      // cost is ticked to 1
+      // 'inadmissible'
+
+      // if within the radius from the center
+      // of a 'False' obstacle
+      // if cost is 0.0
+      // it is raised to a partial
+      // 'admissible' obstacle
+      if (collision_geometries_[o].inadmissible_) {
+        if (dist < 1.0) {
+          // cost += 1.0;
+          cost += 5.0;
+        }
+      } else {
+        if (dist < 1.0) {
+          // cost += 1.0 - dist;
+          cost += 1.0 - dist;
+        }
       }
-    } else {
-      if (dist < 1.0) {
-        // cost += 1.0 - dist;
-        if (cost < 1.0 - dist)
-          cost = 1.0 - dist;
-      }
-    }
+    }  
   }
 
   const double joint_limit_cost = 100.0;
@@ -983,11 +995,14 @@ double StompTest::evaluateStateCostStrategy3(
     }
   }
 
+  // printf("COST %.3f\n", cost);
+
   // for joint costs, impose joint limits (defined in YAML)
-  return 0.0;
+  return cost;
 }
 
 void StompTest::visualizeCostFunctionStrategy3() {
+  printf("visualizeCostFunctionStrategy3 hello?\n");
 }
 
 void StompTest::visualizeTrajectoryStrategy3(
@@ -1013,7 +1028,8 @@ void StompTest::visualizeTrajectoryStrategy3(
       &rollout.parameters_noise_, t,
       // TODO(jim) rewrite parameters_noise_
       // to eigen matrix
-      &fk_hom);
+      &fk_hom,
+      &gripper_fixed_hom);
     marker.points[t].x = fk_hom(0, 3);
     marker.points[t].y = fk_hom(1, 3);
     marker.points[t].z = fk_hom(2, 3);
@@ -1236,18 +1252,18 @@ bool convert<stomp::StompTest>::decode(
   s.num_dimensions_ = s.params_s_.size();
 
   /* load obstacles */
-  if (node["obstacles"] == NULL) {
+  if (node["collision_geometries"] == NULL) {
     throw stomp::ExceptionYaml(
       "stomp::StompTest requires obstacles component");
   }
-  if (!node["obstacles"].IsSequence()) {
+  if (!node["collision_geometries"].IsSequence()) {
     throw stomp::ExceptionYaml(
       "stomp::StompTest requires obstacles sequence");
   }
-  s.obstacles_.clear();
-  for (unsigned int i = 0; i < node["obstacles"].size(); i++) {
-    s.obstacles_.push_back(
-      node["obstacles"][i].as<stomp::Obstacle>());
+  s.collision_geometries_.clear();
+  for (unsigned int i = 0; i < node["collision_geometries"].size(); i++) {
+    s.collision_geometries_.push_back(
+      node["collision_geometries"][i].as<stomp::Obstacle>());
   }
 
   /* load stomp object */
@@ -1291,18 +1307,25 @@ bool convert<stomp::StompTest>::decode(
 int main(int argc, char ** argv) {
   ros::init(argc, argv, "test_stomp2d");
 
-  YAML::Node n = YAML::LoadFile(argv[1]);
+  YAML::Node stomp_test_node = YAML::LoadFile(argv[1]);
   #ifdef DEBUG_VERBOSE
-  std::cout << "loaded n" << std::endl;
-  std::cout << n << std::endl;
+  std::cout << "loaded stomp_test_node" << std::endl;
+  std::cout << stomp_test_node << std::endl;
   #endif
+  stomp::StompTest stomp_test = stomp_test_node.as<stomp::StompTest>();
 
-  stomp::StompTest stomp_test = n.as<stomp::StompTest>();
+  // 2020-01-07
+  YAML::Node obstacle_points_node = YAML::LoadFile(argv[2]);
+  std::vector<std::vector<double>> obstacle_points
+    = obstacle_points_node["points"].as<
+      std::vector<std::vector<double>>>();
+  printf("FOUND %d OBSTACLES IN OBSTACLES FILE!!!\n",
+    obstacle_points.size());
 
   // need this otherwise breaks enable_shared_from_this
   boost::shared_ptr<stomp::StompTest> test(&stomp_test,
     &stomp::null_deleter<stomp::StompTest>);
-  int res = test->run();
+  int res = test->run(&obstacle_points);
 
   return res;
 }

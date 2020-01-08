@@ -1,7 +1,7 @@
 # large scale testing mode 
 large_scale: false
 
-num_time_steps: 100
+num_time_steps: 50
 movement_duration: 1.0
 control_cost_weight: 0.0001
 output_dir: stomp_test_6
@@ -10,9 +10,10 @@ use_chomp: false
 save_noisy_trajectories: false
 save_noiseless_trajectories: false
 delay_per_iteration: 0.04
-num_iterations: 100
 save_cost_function: false
 publish_to_rviz: false
+
+num_iterations: 50
 
 robot:
   dh_joints:
@@ -50,14 +51,14 @@ robot:
 
 stomp:
   # set the three parameters below to the same value for normal operation
-  max_rollouts: 10
-  min_rollouts: 10
-  num_rollouts_per_iteration: 10
+  max_rollouts: 100
+  min_rollouts: 100
+  num_rollouts_per_iteration: 100
   # noise adaptation mode: recommended
   use_noise_adaptation: true
 
   # initial noise stddev - needs to be tuned.
-  noise_stddev: [0.4, 0.4, 0.4, 0.4, 0.4, 0.4]
+  noise_stddev: [2, 2, 2, 2, 2, 2]
   # how much to decay the noise every iteration, only used if noise_adaptation is disabled
   noise_decay: [0.4, 0.4, 0.4, 0.4, 0.4, 0.4]
   # minimum value the noise can reach
@@ -72,19 +73,32 @@ stomp:
 # visualizeTrajectoryStrategy
 # params_s: [0.2, 0.2, 0.1, 0.0, 0.0, 0.0]
 # params_e: [0.9, 0.9, 0.8, 0.0, 0.0, 0.0]
-params_s: [-1.600700000038163, -1.9155698697205885, -2.2622583920110717, -0.5602717382692681, 1.5950999999990207, -0.03100000003816117]
-params_e: [-1.600699999957711, -1.575831842379153, -2.0886449927238395, -1.0736231648959809, 1.5951000000010893, -0.030999999957711744]
+
+# params_s: [-1.600700000038163, -1.9155698697205885, -2.2622583920110717, -0.5602717382692681, 1.5950999999990207, -0.03100000003816117]
+# params_e: [-1.600699999957711, -1.575831842379153, -2.0886449927238395, -1.0736231648959809, 1.5951000000010893, -0.030999999957711744]
+
+params_s:
+  - 2.2509803771972656
+  - -1.0815366071513672
+  - 1.3799899260150355
+  - -0.38627226770434575
+  - 0.7165303230285645
+  - 2.955167055130005
+params_e:
+  - 2.252021312713623
+  - -1.0582869809916993
+  - 0.8649089972125452
+  - 0.15233056127514644
+  - 0.6865749359130859
+  - 2.6394898891448975
 
 # cost function / obstacle defintion
-obstacles:
+collision_geometries:
   -
     center: [0.4, 0.4, 0.4]
-    radius: [0.2, 0.2, 0.2]
-    boolean: false
-  -
-    center: [0.7, 0.5, 0.4]
-    radius: [0.2, 0.2, 0.2]
-    boolean: false
+    # for evaluateStateCostStrategy3, only radius matters
+    radius: [0.1, 0.1, 0.1]
+    boolean: True
 
 chomp:
   learning_rate: 10.0
