@@ -38,7 +38,13 @@ catkin_package(
 include_directories(
   include
   ${catkin_INCLUDE_DIRS}
+  ${EIGEN3_INCLUDE_DIRS}
+  # ${OpenMP_INCLUDE_DIRS}
 )
+
+add_definitions(${EIGEN3_DEFINITIONS})
+# add_definitions(${OpenMP_CXX_FLAGS})
+#add_definitions(-DEIGEN_NO_DEBUG -DNDEBUG)
 
 add_library(${PROJECT_NAME}
   # src/chomp.cpp
@@ -47,6 +53,8 @@ add_library(${PROJECT_NAME}
   src/covariant_movement_primitive.cpp
   src/policy_improvement.cpp
   src/stomp.cpp
+  src/stomp_constrained.cpp
+  src/stomp_test.cpp
 )
 
 add_dependencies(
@@ -69,62 +77,33 @@ if (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
     /usr/local/lib/libyaml-cpp.a
     ${roscpp_LIBRARIES}
     ${catkin_LIBRARIES}
+    # ${OpenMP_CXX_FLAGS}
   )
 else()
   target_link_libraries(
     ${PROJECT_NAME}
     ${catkin_LIBRARIES}
     yaml-cpp
+    # ${OpenMP_CXX_FLAGS}
   )
 endif()
 
 #################################################
 
-add_executable(test_ur_kin
-  test/test_ur_kin.cpp
+set(EXECUTABLES
+  test_ur_kin
+  # test_cmp
+  # eigen_perf_test
+  # stomp_constrained_test
+  stomp_node
+  # test_distributions
 )
 
-add_executable(test_stomp2d
-  test/stomp_2d_test.cpp
-)
-
-# add_executable(test_cmp
-#   test/test_cmp.cpp
-# )
-# add_executable(stomp_2d_00
-#   test/stomp_2d_00.cpp
-# )
-#add_executable(test_eigen_perf
-#  test/eigen_perf_test.cpp
-#)
-#add_executable(stomp_constrained_test
-#  test/stomp_constrained_test.cpp
-#)
-
-include_directories(include
-  ${catkin_INCLUDE_DIRS}
-  # ${OpenMP_INCLUDE_DIRS}
-  ${EIGEN3_INCLUDE_DIRS})
-
-add_definitions(${EIGEN3_DEFINITIONS})
-# add_definitions(${OpenMP_CXX_FLAGS})
-#add_definitions(-DEIGEN_NO_DEBUG -DNDEBUG)
-
-target_link_libraries(test_stomp2d ${PROJECT_NAME})
-
-target_link_libraries(test_ur_kin ${PROJECT_NAME})
-
-# target_link_libraries(test_cmp stomp)
-# target_link_libraries(stomp_2d_00 stomp ${catkin_LIBRARIES} ${OpenMP_CXX_FLAGS})
-
-target_link_libraries(${PROJECT_NAME} ${catkin_LIBRARIES})
-# target_link_libraries(stomp ${OpenMP_CXX_FLAGS})
-
-#target_link_libraries(test_eigen_perf ${Eigen_LIBRARIES} ${OpenMP_CXX_FLAGS})
-#target_link_libraries(stomp_constrained_test ${catkin_LIBRARIES} ${OpenMP_CXX_FLAGS})
-
-# add_executable(stomp_test_distributions
-#   test/test_distributions.cpp
-#   src/stomp_constrained.cpp
-# )
-# target_link_libraries(stomp_test_distributions ${catkin_LIBRARIES} ${OpenMP_CXX_FLAGS})
+foreach(executable ${EXECUTABLES})
+  add_executable(${PROJECT_NAME}_${executable} test/${executable})
+  target_link_libraries(${PROJECT_NAME}_${executable}
+    ${PROJECT_NAME}
+    ${catkin_LIBRARIES}
+    # ${OpenMP_CXX_FLAGS}
+  )
+endforeach()

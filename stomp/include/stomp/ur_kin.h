@@ -47,23 +47,25 @@ class DHJoint {
   // updates a_matrix
 };
 
-int SIGN(double x) {
-  return (x > 0) - (x < 0);
-}
+int SIGN(double x);
 
 double qnear_err_func_0(double* qnear, double* solution_qs,
-  double* min_costs, double* min_vals) {
-  double cost = 0.0;
-  // printf("qs: ");
-  for (int i = 0; i < kNumJointsInArm; ++i) {
-    // printf("%.3f ", solution_qs[i]);
-    cost += fabs(qnear[i] - solution_qs[i]);
-  }
-  // printf("\n");
-  return cost;
-}
+  double* min_costs, double* min_vals);
 
-void smallest_diff_with_multiples(double* a, double* b,
+double qnear_err_func_1(double* qnear, double* solution_qs,
+  double* min_costs, double* min_vals);
+
+
+/*
+You defined get_age in a header. That means it is copied into each translation unit, by the #include you have in each .cpp.
+
+When you mark it static in namespace scope, that makes each copy "local" to that translation unit so no conflict occurs.
+
+If you marked it inline, you'd be promising the compiler and linker that the definition is the same in each translation unit (which we can see it is) so the multiple copies would be magically rolled up into just one.
+
+The proper approach, though, is to declare in your header and define in one source file, as you do with your class's member functions.
+*/
+inline void smallest_diff_with_multiples(double* a, double* b,
   double delta_multiple_on_b, int increment,
   double* smallest_diff,
   int* up_m,
@@ -96,45 +98,6 @@ void smallest_diff_with_multiples(double* a, double* b,
   // is the value of b before you overshot
   *last_valid_b_val = (*b + (
     *up_m - increment) * delta_multiple_on_b);
-}
-
-double qnear_err_func_1(double* qnear, double* solution_qs,
-  double* min_costs, double* min_vals) {
-  double* neg_costs = new double[kNumJointsInArm];
-  double* neg_vals = new double[kNumJointsInArm];
-  for (int i = 0; i < kNumJointsInArm; ++i) {
-    int up_m;
-    smallest_diff_with_multiples(
-      &qnear[i], &solution_qs[i], 2*M_PI, -1,
-      &neg_costs[i],
-      &up_m,
-      &neg_vals[i]);
-  }
-
-  double* pos_costs = new double[kNumJointsInArm];
-  double* pos_vals = new double[kNumJointsInArm];
-  for (int i = 0; i < kNumJointsInArm; ++i) {
-    int up_m;
-    smallest_diff_with_multiples(
-      &qnear[i], &solution_qs[i], 2*M_PI, 1,
-      &pos_costs[i],
-      &up_m,
-      &pos_vals[i]);
-  }
-
-  double min_cost = 0.0;
-  for (int i = 0; i < kNumJointsInArm; ++i) {
-    min_costs[i] = (neg_costs[i] < pos_costs[i]) ? neg_costs[i] : pos_costs[i];
-    min_cost += min_costs[i];
-    min_vals[i] = (neg_costs[i] < pos_costs[i]) ? neg_vals[i] : pos_vals[i];
-  }
-
-  delete[] neg_costs;
-  delete[] neg_vals;
-  delete[] pos_costs;
-  delete[] pos_vals;
-
-  return min_cost;
 }
 
 typedef double (*qnear_func)(double* qnear, double* solution_qs,
@@ -405,10 +368,11 @@ int analytic_ur_ik(DHJoint* params,
 }
 */
 
-int analytic_ur_fk(
+inline int analytic_ur_fk(
   std::vector<DHJoint>* joints,
   std::vector<double>* qs,
-  Hom* fk_hom) {
+  Hom* fk_hom,
+  Hom* gripper_fixed_hom = nullptr) {
   assert(qs->size() == joints->size());
   if (qs->size() != joints->size()) {
     printf("analytic_ur_fk::mismatch between qs size and joints size!\n");
@@ -423,10 +387,15 @@ int analytic_ur_fk(
     // do not use noalias, you need to use temporary
   }
 
+  // add joint fixed gripper pole at the end
+  if (gripper_fixed_hom != nullptr) {
+    (*fk_hom) = (*fk_hom) * (*gripper_fixed_hom);
+  }
+
   return 0;
 }
 
-int analytic_ur_fk_2(
+inline int analytic_ur_fk_2(
   std::vector<DHJoint>* joints,
   Eigen::MatrixXd* qs,
   Hom* fk_hom,
@@ -447,7 +416,7 @@ int analytic_ur_fk_2(
   return 0;
 }
 
-int analytic_ur_fk_3(
+inline int analytic_ur_fk_3(
   std::vector<DHJoint>* joints,
   std::vector<Eigen::VectorXd>* qs,
   int qs_index,

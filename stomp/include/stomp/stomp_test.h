@@ -15,16 +15,27 @@
 #include <stomp/task.h>
 #include <yaml-cpp/yaml.h>
 
+#include "stomp/HandlePlanStompSrv.h"
+
 // 2020-01-06 timing difference
 #include <time.h>
+
+#include <stomp/stomp_utils.h>
+#include <visualization_msgs/Marker.h>
 
 #include <string>
 #include <vector>
 #include <fstream>
 
-#include <boost/enable_shared_from_this.hpp>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <stdlib.h>
 
-#include "stomp/HandlePlanStompSrv.h"
+#include <ros/ros.h>
+#include <sstream>
+#include <cstdio>
+
+#include <boost/enable_shared_from_this.hpp>
 
 namespace stomp {
 
@@ -41,7 +52,14 @@ class StompTest: public Task,
   public boost::enable_shared_from_this<StompTest> {
  public:
   StompTest():
-    node_handle_("test_stomp2d") {}
+    node_handle_("test_stomp2d"), initialized_(false) {
+      // ros interfaces
+      // TODO(jim) remove these maybe
+      rviz_pub_ = node_handle_.advertise<visualization_msgs::Marker>(
+        "visualization", 100, false);
+      ros::ServiceServer service = node_handle_.advertiseService(
+        "plan_stomp", &StompTest::HandlePlanStomp, this);
+    }
 
   int run(std::vector<std::vector<double>>* obstacle_points);
 
@@ -53,6 +71,7 @@ class StompTest: public Task,
    * @return
    */
   virtual bool initialize(int num_threads, int num_rollouts);
+  bool initialized_;
 
   /**
    * Executes the task for the given policy parameters, and returns the costs per timestep
@@ -134,8 +153,6 @@ class StompTest: public Task,
   std::vector<double> params_e_;
 
   std::vector<Eigen::VectorXd> initial_trajectory_;
-
-  void writeCostFunction();
 
   double interpPathSegmentAndEvaluateStateCost(
     Eigen::MatrixXd* last_param_sample,

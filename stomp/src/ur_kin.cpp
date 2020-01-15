@@ -24,6 +24,61 @@ void DHJoint::calc_fk(double q) {
   a_matrix(2, 3) = d;
 }
 
+int SIGN(double x) {
+  return (x > 0) - (x < 0);
+}
+
+double qnear_err_func_0(double* qnear, double* solution_qs,
+  double* min_costs, double* min_vals) {
+  double cost = 0.0;
+  // printf("qs: ");
+  for (int i = 0; i < kNumJointsInArm; ++i) {
+    // printf("%.3f ", solution_qs[i]);
+    cost += fabs(qnear[i] - solution_qs[i]);
+  }
+  // printf("\n");
+  return cost;
+}
+
+double qnear_err_func_1(double* qnear, double* solution_qs,
+  double* min_costs, double* min_vals) {
+  double* neg_costs = new double[kNumJointsInArm];
+  double* neg_vals = new double[kNumJointsInArm];
+  for (int i = 0; i < kNumJointsInArm; ++i) {
+    int up_m;
+    smallest_diff_with_multiples(
+      &qnear[i], &solution_qs[i], 2*M_PI, -1,
+      &neg_costs[i],
+      &up_m,
+      &neg_vals[i]);
+  }
+
+  double* pos_costs = new double[kNumJointsInArm];
+  double* pos_vals = new double[kNumJointsInArm];
+  for (int i = 0; i < kNumJointsInArm; ++i) {
+    int up_m;
+    smallest_diff_with_multiples(
+      &qnear[i], &solution_qs[i], 2*M_PI, 1,
+      &pos_costs[i],
+      &up_m,
+      &pos_vals[i]);
+  }
+
+  double min_cost = 0.0;
+  for (int i = 0; i < kNumJointsInArm; ++i) {
+    min_costs[i] = (neg_costs[i] < pos_costs[i]) ? neg_costs[i] : pos_costs[i];
+    min_cost += min_costs[i];
+    min_vals[i] = (neg_costs[i] < pos_costs[i]) ? neg_vals[i] : pos_vals[i];
+  }
+
+  delete[] neg_costs;
+  delete[] neg_vals;
+  delete[] pos_costs;
+  delete[] pos_vals;
+
+  return min_cost;
+}
+
 }  // namespace stomp
 
 

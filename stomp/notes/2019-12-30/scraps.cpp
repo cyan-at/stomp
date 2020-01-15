@@ -335,7 +335,215 @@ cost_functions:
 
 ##################################################################
 
+void writeCostFunction();
+
+void StompTest::writeCostFunction() {
+  std::stringstream ss;
+  ss << output_dir_ << "/cost_function.txt";
+  int num_x = lrint(1.0 / resolution_) + 1;
+  int num_y = lrint(1.0 / resolution_) + 1;
+
+  FILE *f = fopen(ss.str().c_str(), "w");
+  fprintf(f, "%d\t%d\n", num_x, num_y);
+
+  Eigen::MatrixXd param_sample = Eigen::MatrixXd::Zero(num_dimensions_, 1);
+  for (int i = 0; i < num_x; ++i) {
+    double x = i*resolution_;
+    for (int j = 0; j < num_y; ++j) {
+      double y = j*resolution_;
+
+      param_sample(0, 0) = x;
+      param_sample(1, 0) = y;
+      double cost = (this->*evaluateStateCostStrategy)(&param_sample);
+      fprintf(f, "%lf\t%lf\t%lf\n", x, y, cost);
+    }
+  }
+  fclose(f);
+}
+
 ##################################################################
+
+int StompTest::run(
+  std::vector<std::vector<double>>* obstacle_points) {
+  obstacle_points_ = obstacle_points;
+
+  srand(time(NULL));
+  mkdir(output_dir_.c_str(), 0755);
+  std::stringstream stddev_filename, cost_filename;
+  std::stringstream num_rollouts_filename;
+  stddev_filename << output_dir_ << "/stddevs.txt";
+  cost_filename << output_dir_ << "/costs.txt";
+  num_rollouts_filename << output_dir_ << "/num_rollouts.txt";
+  FILE *stddev_file = fopen(stddev_filename.str().c_str(), "w");
+  FILE *cost_file = fopen(cost_filename.str().c_str(), "w");
+  FILE *num_rollouts_file = NULL;
+  if (save_noisy_trajectories_) {
+    num_rollouts_file = fopen(num_rollouts_filename.str().c_str(), "w");
+  }
+
+  std::vector<Eigen::VectorXd> initial_trajectory;
+  initial_trajectory.resize(num_dimensions_,
+    Eigen::VectorXd::Zero(num_time_steps_ + 2*TRAJECTORY_PADDING));
+
+  std::vector<Eigen::MatrixXd> derivative_costs;
+  derivative_costs.resize(
+    num_dimensions_,
+    Eigen::MatrixXd::Zero(num_time_steps_ + 2*TRAJECTORY_PADDING,
+      NUM_DIFF_RULES));
+
+  for (int d = 0; d < num_dimensions_; ++d) {
+    // apply starting point and ending point here
+    initial_trajectory[d].head(TRAJECTORY_PADDING) =
+      params_s_[d]*Eigen::VectorXd::Ones(
+      TRAJECTORY_PADDING);
+    initial_trajectory[d].tail(TRAJECTORY_PADDING) =
+      params_e_[d]*Eigen::VectorXd::Ones(
+      TRAJECTORY_PADDING);
+
+    derivative_costs[d].col(STOMP_ACCELERATION) = Eigen::VectorXd::Ones(
+      num_time_steps_ + 2*TRAJECTORY_PADDING);
+  }
+
+  policy_.reset(new CovariantMovementPrimitive());
+  policy_->initialize(
+    num_time_steps_,
+    num_dimensions_,
+    movement_duration_,
+    derivative_costs,
+    initial_trajectory);
+  policy_->setToMinControlCost();
+  policy_->getParametersAll(initial_trajectory_);
+
+  vel_diff_matrix_ = policy_->getDifferentiationMatrix(
+    stomp::STOMP_VELOCITY);
+  acc_diff_matrix_ = policy_->getDifferentiationMatrix(
+    stomp::STOMP_ACCELERATION);
+  movement_dt_ = policy_->getMovementDt();
+
+  if (save_cost_function_)
+    writeCostFunction();
+  if (publish_to_rviz_) {
+    int timeout = 5;
+    int counter = 0;
+    while (rviz_pub_.getNumSubscribers() == 0 && counter < timeout) {
+      ROS_WARN("Waiting for rviz to connect...");
+      ros::Duration(1.0).sleep();
+      ++counter;
+    }
+    (this->*visualizeCostFunctionStrategy)();
+  }
+
+  ros::NodeHandle stomp_node_handle(node_handle_, "stomp");
+  // stomp_.reset(new stomp::STOMP());
+  boost::shared_ptr<stomp::STOMP> stomp_boost_sharedptr(&stomp,
+      &stomp::null_deleter<stomp::STOMP>);
+  stomp_ = stomp_boost_sharedptr;
+  stomp_->initialize(num_dimensions_,
+    stomp_node_handle, shared_from_this());
+
+  // ros::NodeHandle chomp_node_handle(node_handle_, "chomp");
+  // chomp_.reset(new stomp::CHOMP());
+  // chomp_->initialize(chomp_node_handle, shared_from_this());
+
+  if (save_noiseless_trajectories_) {
+    std::stringstream sss;
+    sss << output_dir_ << "/noiseless_0.txt";
+    policy_->writeToFile(sss.str());
+  }
+
+  CovariantMovementPrimitive tmp_policy = *policy_;
+
+  ros::Time prev_iter_stamp = ros::Time::now();
+
+  const clock_t begin_time = std::clock();
+
+  double latest_trajectory_cost = 0.0;
+  for (int i = 1; i <= num_iterations_; ++i) {
+    std::vector<Rollout> rollouts;
+    Rollout noiseless_rollout;
+    if (use_chomp_) {
+      // chomp_->runSingleIteration(i);
+      // chomp_->getNoiselessRollout(noiseless_rollout);
+      // if (save_noiseless_trajectories_) {
+      //   for (unsigned int d = 0; d < num_dimensions_; ++d) {
+      //     fprintf(stddev_file, "%f\t", 0.0);
+      //   }
+      //   fprintf(stddev_file, "\n");
+      // }
+    } else {
+      // printf("running single iteration\n");
+      stomp_->runSingleIteration(i);
+      stomp_->getAllRollouts(rollouts);
+      stomp_->getNoiselessRollout(noiseless_rollout);
+
+      std::vector<double> stddevs;
+      stomp_->getAdaptedStddevs(stddevs);
+      if (save_noiseless_trajectories_) {
+        for (unsigned int d = 0; d < stddevs.size(); ++d) {
+          fprintf(stddev_file, "%f\t", stddevs[d]);
+        }
+        fprintf(stddev_file, "\n");
+      }
+    }
+
+    if (save_noiseless_trajectories_) {
+      std::stringstream ss;
+      ss << output_dir_ << "/noiseless_" << i << ".txt";
+      policy_->writeToFile(ss.str());
+      fprintf(cost_file, "%f\n", noiseless_rollout.total_cost_);
+    }
+
+    if (save_noisy_trajectories_) {
+      fprintf(num_rollouts_file, "%d\n", static_cast<int>(rollouts.size()));
+      for (unsigned int j = 0; j < rollouts.size(); ++j) {
+        std::stringstream ss2;
+        ss2 << output_dir_ << "/noisy_" << i << "_" << j << ".txt";
+        // tmp_policy.setParameters(rollouts[j].parameters_noise_projected_);
+        tmp_policy.setParameters(rollouts[j].parameters_noise_);
+        tmp_policy.writeToFile(ss2.str());
+      }
+    }
+    // printf("%f\n", noiseless_rollout.total_cost_);
+
+    // if (publish_to_rviz_) {
+    if (true) {
+      // wait until delay_per_iteration
+      double delay = 0.0;
+      // while (delay < delay_per_iteration_) {
+      //   delay = (ros::Time::now() - prev_iter_stamp).toSec();
+      //   if (delay < delay_per_iteration_) {
+      //     ros::Duration(delay_per_iteration_ - delay).sleep();
+      //   }
+      // }
+      // prev_iter_stamp = ros::Time::now();
+
+      (this->*visualizeTrajectoryStrategy)(noiseless_rollout, true, 0);
+      if (!use_chomp_) {
+        for (size_t j=0; j < rollouts.size(); ++j) {
+          (this->*visualizeTrajectoryStrategy)(rollouts[j], false, j+1);
+        }
+      }
+    }
+  }
+
+  double runtime_secs = static_cast<double>(
+    std::clock() - begin_time) / CLOCKS_PER_SEC;
+  printf("total runtime_secs %.3f\n", runtime_secs);
+
+  fclose(stddev_file);
+  fclose(cost_file);
+  if (save_noisy_trajectories_)
+    fclose(num_rollouts_file);
+
+  std::string filename = "/home/jim/Desktop/stomp_output.yaml";
+  saveTrajectoryStrategy3(filename.c_str());
+
+  stomp_.reset();
+  // chomp_.reset();
+  policy_.reset();
+
+  return 0;
+}
 
 ##################################################################
 

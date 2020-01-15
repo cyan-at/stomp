@@ -1,0 +1,112 @@
+# large scale testing mode 
+large_scale: false
+
+num_time_steps: 50
+movement_duration: 1.0
+control_cost_weight: 0.0001
+output_dir: stomp_test_6
+# cannot be absolute path otherwise crashes app
+use_chomp: false
+save_noisy_trajectories: false
+save_noiseless_trajectories: false
+delay_per_iteration: 0.04
+save_cost_function: false
+publish_to_rviz: false
+
+num_iterations: 50
+path_segment_interpolation_resolution: 0.002
+
+robot:
+  dh_joints:
+  # ur10e
+  -
+    d: 0.1807
+    r_a: 0.0
+    alpha: 1.5707963
+    limits: [-6.28, 6.28]
+  -
+    d: 0.0
+    r_a: -0.6127
+    alpha: 0.0
+    limits: [-6.28, 6.28]
+  -
+    d: 0.0
+    r_a: -0.57155
+    alpha: 0.0
+    limits: [-6.28, 6.28]
+  -
+    d: 0.17415
+    r_a: 0.0
+    alpha: 1.5707963
+    limits: [-6.28, 6.28]
+  -
+    d: 0.11985
+    r_a: 0.0
+    alpha: -1.5707963
+    limits: [-6.28, 6.28]
+  -
+    d: 0.11655
+    r_a: 0.0
+    alpha: 0.0
+    limits: [-6.28, 6.28]
+
+  gripper_xyz: [0.0, 0.07, 0.43050]
+
+stomp:
+  # set the three parameters below to the same value for normal operation
+  max_rollouts: 100
+  min_rollouts: 100
+  num_rollouts_per_iteration: 100
+  # noise adaptation mode: recommended
+  use_noise_adaptation: true
+
+  # initial noise stddev - needs to be tuned.
+  # noise_stddev: [1.4, 0.1, 0.1, 0.1, 0.1, 0.1]
+  # noise_stddev: [1.3, 0.1, 0.1, 0.1, 0.1, 0.1]
+  noise_stddev: [1.2, 0.1, 0.1, 0.1, 0.1, 0.1]
+  # noise_stddev: [0.1, 1.5, 0.1, 0.1, 0.1, 0.1]
+
+  # how much to decay the noise every iteration, only used if noise_adaptation is disabled
+  noise_decay: [0.5, 0.5, 0.4, 0.4, 0.4, 0.4]
+  # minimum value the noise can reach
+  noise_min_stddev: [0.01, 0.01, 0.01, 0.01, 0.01, 0.01]
+
+# define params to start at and params to end at
+# initial trajectory I assume to be numerical linear
+# interpolation for every dim
+# spatial meaning / state cost depends on
+# evaluateStateCostStrategy
+# visualizeCostFunctionStrategy
+# visualizeTrajectoryStrategy
+# params_s: [0.2, 0.2, 0.1, 0.0, 0.0, 0.0]
+# params_e: [0.9, 0.9, 0.8, 0.0, 0.0, 0.0]
+
+# params_s: [-1.600700000038163, -1.9155698697205885, -2.2622583920110717, -0.5602717382692681, 1.5950999999990207, -0.03100000003816117]
+# params_e: [-1.600699999957711, -1.575831842379153, -2.0886449927238395, -1.0736231648959809, 1.5951000000010893, -0.030999999957711744]
+
+params_s:
+  - 2.2509803771972656
+  - -1.0815366071513672
+  - 1.3799899260150355
+  - -0.38627226770434575
+  - 0.7165303230285645
+  - 2.955167055130005
+params_e:
+  - 2.252021312713623
+  - -1.0582869809916993
+  - 0.8649089972125452
+  - 0.15233056127514644
+  - 0.6865749359130859
+  - 2.6394898891448975
+
+# cost function / obstacle defintion
+collision_geometries:
+  -
+    center: [0.4, 0.4, 0.4]
+    # for evaluateStateCostStrategy3, only radius matters
+    radius: [0.05, 0.05, 0.05]
+    boolean: True
+
+chomp:
+  learning_rate: 10.0
+  max_update: 1000.0
