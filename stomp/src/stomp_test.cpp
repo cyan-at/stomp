@@ -840,9 +840,9 @@ double StompTest::evaluateStateCostStrategy3(
   double z = (*param_sample)(2, 0);
 
   for (unsigned int o = 0; o < collision_geometries_.size(); ++o) {
-    // TODO(jim) add nearest neighbors lookup, fixed size always query n nearest neighbors
+    // TODO(jim) add nearest neighbors lookup
+    // fixed size always query n nearest neighbors
     for (unsigned int j = 0; j < obstacle_points_->size(); ++j) {
-
       double dx = (x - obstacle_points_->at(j)[0])
         / collision_geometries_[o].radius_[0];
       // printf("dx %.3f\n", dx);
@@ -852,6 +852,7 @@ double StompTest::evaluateStateCostStrategy3(
       double dz = (z - obstacle_points_->at(j)[2])
         / collision_geometries_[o].radius_[2];
       // printf("dz %.3f\n", dz);
+
       double dist = sqrt(dx * dx + dy * dy + dz * dz);
       // printf("dist: %.3f\n", dist);
 
@@ -1082,11 +1083,11 @@ bool convert<stomp::Obstacle>::decode(
   }
   o.radius_ = node["radius"].as<std::vector<double>>();
 
-  if (node["boolean"] == NULL) {
+  if (node["inadmissible"] == NULL) {
     throw stomp::ExceptionYaml(
-      "stomp::Obstacle requires boolean component");
+      "stomp::Obstacle requires inadmissible component");
   }
-  o.inadmissible_ = node["boolean"].as<bool>();
+  o.inadmissible_ = node["inadmissible"].as<bool>();
 
   return true;
 }
