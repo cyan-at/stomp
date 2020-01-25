@@ -94,9 +94,9 @@ set(EXECUTABLES
   test_ur_kin
   # test_cmp
   # eigen_perf_test
-  # stomp_constrained_test
   stomp_node
   # test_distributions
+  stomp_constrained_test
 )
 
 foreach(executable ${EXECUTABLES})

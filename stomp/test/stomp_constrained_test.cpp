@@ -18,10 +18,8 @@
 static const double diff_2[2] = {-1.0, 1.0};
 static const double diff_3[3] = {1.0, -2.0, 1.0};
 
-class StompConstrainedTest
-{
-public:
-
+class StompConstrainedTest {
+ public:
   StompConstrainedTest():
     normal_dist_(0.0, 1.0),
     gaussian_(rng_, normal_dist_)
@@ -343,20 +341,16 @@ public:
     computeFK(policy_mean_, mean_link_positions_x_, mean_link_positions_y_);
   }
 
-  void computeCostsForSamples()
-  {
+  void computeCostsForSamples() {
     sample_costs_ = Eigen::VectorXd::Zero(num_samples);
     sample_probabilities_ = Eigen::VectorXd::Zero(num_samples);
 
     double dist_threshold = 0.2;
     double sphere_center_x = 0.8;
 
-    for (int s=0; s<num_samples; ++s)
-    {
-      for (int j=0; j<num_joints; ++j)
-      {
-        for (int t=1; t<num_time_steps-1; ++t)
-        {
+    for (int s=0; s<num_samples; ++s) {
+      for (int j=0; j<num_joints; ++j) {
+        for (int t=1; t<num_time_steps-1; ++t) {
           int ind = getIndex(j, t);
           int prev_ind = getIndex(j, t-1);
           int next_ind = getIndex(j, t+1);
@@ -365,8 +359,7 @@ public:
 
           double sqr_dist = pow(samples_link_positions_x_(ind, s) - sphere_center_x, 2.0) +
               pow(samples_link_positions_y_(ind, s), 2.0);
-          if (sqr_dist < dist_threshold * dist_threshold)
-          {
+          if (sqr_dist < dist_threshold * dist_threshold) {
             //sample_costs_(s) += ((dist_threshold * dist_threshold) - sqr_dist) * vel;
             sample_costs_(s) += (num_joints - j) * vel;
           }
@@ -387,48 +380,46 @@ public:
   }
 
   template<typename Derived1, typename Derived2>
-  void computeFK(const Eigen::MatrixBase<Derived1>& samples, Eigen::MatrixBase<Derived2>& link_positions_x, Eigen::MatrixBase<Derived2>& link_positions_y)
-  {
+  void computeFK(
+    const Eigen::MatrixBase<Derived1>& samples,
+    Eigen::MatrixBase<Derived2>& link_positions_x,
+    Eigen::MatrixBase<Derived2>& link_positions_y) {
     double length = 1.0 / num_joints;
 
     int num_samples = samples.cols();
     Eigen::MatrixBase<Derived2>& angle_sums = link_positions_x; // just reusing the same memory
     angle_sums = samples;
 
-    for (int j=1; j<num_joints; ++j)
-    {
+    for (int j = 1; j < num_joints; ++j) {
       int index = getIndex(j, 0);
       int prev_index = getIndex(j-1, 0);
-      angle_sums.middleRows(index, num_time_steps) += angle_sums.middleRows(prev_index, num_time_steps);
+      angle_sums.middleRows(index, num_time_steps) += angle_sums.middleRows(
+        prev_index, num_time_steps);
     }
     link_positions_y = link_positions_x;
 
     link_positions_y = (link_positions_y.array().sin() * length).matrix();
     link_positions_x = (link_positions_x.array().cos() * length).matrix();
 
-    for (int j=1; j<num_joints; ++j)
-    {
+    for (int j=1; j<num_joints; ++j) {
       int index = getIndex(j, 0);
       int prev_index = getIndex(j-1, 0);
       link_positions_x.middleRows(index, num_time_steps) +=
-          link_positions_x.middleRows(prev_index, num_time_steps);
+        link_positions_x.middleRows(prev_index, num_time_steps);
       link_positions_y.middleRows(index, num_time_steps) +=
-          link_positions_y.middleRows(prev_index, num_time_steps);
+        link_positions_y.middleRows(prev_index, num_time_steps);
     }
   }
 
-  void updateMean()
-  {
+  void updateMean() {
     policy_mean_ = Eigen::VectorXd::Zero(size);
-    for (int s=0; s<num_samples; ++s)
-    {
+    for (int s=0; s<num_samples; ++s) {
       policy_mean_ += sample_probabilities_(s) * conditioned_samples_.col(s);
     }
     printf("Mean cost = %lf\n", double(policy_mean_.transpose() * sparse_R_ * policy_mean_));
   }
 
-  void visualizeTrajectories()
-  {
+  void visualizeTrajectories() {
     if (!ros::ok())
       exit(0);
     for (int i=0; i<samples_link_positions_x_.cols(); ++i)
@@ -436,8 +427,7 @@ public:
     //ros::Duration(1.0).sleep();
   }
 
-  void visualizeTrajectoryStrategy1(Eigen::MatrixXd& link_positions_x, Eigen::MatrixXd& link_positions_y, bool noiseless, int id, double prob)
-  {
+  void visualizeTrajectoryStrategy1(Eigen::MatrixXd& link_positions_x, Eigen::MatrixXd& link_positions_y, bool noiseless, int id, double prob) {
     visualization_msgs::Marker marker;
     marker.header.frame_id = "BASE";
     marker.header.stamp = ros::Time::now();
@@ -480,8 +470,7 @@ public:
     rviz_pub_.publish(marker);
   }
 
-  void displayGoals()
-  {
+  void displayGoals() {
     visualization_msgs::Marker marker;
     marker.header.frame_id = "BASE";
     marker.header.stamp = ros::Time::now();
@@ -534,10 +523,8 @@ public:
   }
 
   template<typename Derived>
-  void animateTrajectory(Eigen::MatrixBase<Derived>& link_positions_x, Eigen::MatrixBase<Derived>& link_positions_y, int id)
-  {
-    for (int t=0; t<num_time_steps; ++t)
-    {
+  void animateTrajectory(Eigen::MatrixBase<Derived>& link_positions_x, Eigen::MatrixBase<Derived>& link_positions_y, int id) {
+    for (int t=0; t<num_time_steps; ++t) {
       if (!ros::ok())
         exit(0);
 
@@ -597,8 +584,7 @@ public:
     }
   }
 
-  void writeToFile(int iter)
-  {
+  void writeToFile(int iter) {
     std::stringstream filename;
     filename << "/tmp/stomp_constrained_iter_" << iter << ".txt";
     FILE* file = fopen(filename.str().c_str(), "w");
@@ -616,21 +602,17 @@ public:
     fclose(file);
   }
 
-  void plotMeanTrajectory()
-  {
+  void plotMeanTrajectory() {
     plotTrajectory(mean_link_positions_x_, mean_link_positions_y_, 0);
   }
 
-  void plotInitialMeanTrajectory()
-  {
+  void plotInitialMeanTrajectory() {
     plotTrajectory(mean_link_positions_x_, mean_link_positions_y_, 0, true);
   }
 
   template<typename Derived>
-  void plotTrajectory(Eigen::MatrixBase<Derived>& link_positions_x, Eigen::MatrixBase<Derived>& link_positions_y, int id, bool initial=false)
-  {
-    for (int t=0; t<num_time_steps; t+=9)
-    {
+  void plotTrajectory(Eigen::MatrixBase<Derived>& link_positions_x, Eigen::MatrixBase<Derived>& link_positions_y, int id, bool initial=false) {
+    for (int t=0; t<num_time_steps; t+=9) {
       visualization_msgs::Marker marker;
       marker.header.frame_id = "BASE";
       marker.header.stamp = ros::Time::now();
@@ -742,8 +724,7 @@ private:
   ros::Publisher rviz_pub_;
 };
 
-int main(int argc, char** argv)
-{
+int main(int argc, char** argv) {
   ros::init(argc, argv, "stomp_constrained_test");
   ros::AsyncSpinner async_spinner(0);
   async_spinner.start();
@@ -762,30 +743,29 @@ int main(int argc, char** argv)
   ept.plotInitialMeanTrajectory();
   ept.createConstraintMatrix();
   ept.noise_stddev_ = 0.001;
-  {
-    boost::progress_timer t;
-    for (int iter=0; iter<200; ++iter)
-    {
-      printf(".");
-      fflush(stdout);
-      if (!ros::ok())
-        exit(0);
 
-      ept.displayGoals();
+  boost::progress_timer t;
+  for (int iter = 0; iter < 200; ++iter) {
+    printf(".");
+    fflush(stdout);
+    if (!ros::ok())
+      exit(0);
 
-      ept.computeFKForMean();
-      ept.plotMeanTrajectory();
-      ept.writeToFile(iter);
-      ept.updateConstraintMatrix();
-      ept.computeConstraintProjector();
-      ept.generateSamples();
-      ept.computeFKForSamples();
-      ept.computeCostsForSamples();
-      //ept.visualizeTrajectories();
-      ept.updateMean();
-      ept.noise_stddev_ *= 0.998;
-    }
+    ept.displayGoals();
+
+    ept.computeFKForMean();
+    ept.plotMeanTrajectory();
+    ept.writeToFile(iter);
+    ept.updateConstraintMatrix();
+    ept.computeConstraintProjector();
+    ept.generateSamples();
+    ept.computeFKForSamples();
+    ept.computeCostsForSamples();
+    //ept.visualizeTrajectories();
+    ept.updateMean();
+    ept.noise_stddev_ *= 0.998;
   }
+
   ept.computeFKForMean();
   //ept.animateTrajectories();
   ept.plotMeanTrajectory();
